@@ -1,190 +1,1641 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
+
     <meta charset="UTF-8">
+
     <meta
         name="viewport"
-        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     >
+
     <meta
         name="theme-color"
         content="#050505"
     >
+
     <meta
-        name="apple-mobile-web-app-capable"
-        content="yes"
+        name="color-scheme"
+        content="dark"
     >
+
     <meta
-        name="mobile-web-app-capable"
-        content="yes"
+        name="description"
+        content="LIFE GAME — персональная система управления жизнью."
     >
+
     <title>LIFE GAME</title>
-    <!-- ============================= -->
-    <!-- GLOBAL STYLES -->
-    <!-- ============================= -->
+
+
+    <!-- =====================================================
+         GLOBAL STYLES
+         ===================================================== -->
+
     <link
         rel="stylesheet"
-        href="./css/base.css"
+        href="css/base.css"
     >
+
     <link
         rel="stylesheet"
-        href="./css/layout.css"
+        href="css/layout.css"
     >
+
     <link
         rel="stylesheet"
-        href="./css/components.css"
+        href="css/components.css"
     >
-    <!-- ============================= -->
-    <!-- MODULE STYLES -->
-    <!-- ============================= -->
+
+
+    <!-- =====================================================
+         MODULE STYLES
+         ===================================================== -->
+
     <link
         rel="stylesheet"
-        href="./modules/finance/finance.css"
+        href="modules/development/development.css"
     >
+
     <link
         rel="stylesheet"
-        href="./modules/health/health.css"
+        href="modules/finance/finance.css"
     >
+
     <link
         rel="stylesheet"
-        href="./modules/development/development.css"
+        href="modules/health/health.css"
     >
+
+
+    <!-- =====================================================
+         LIFE GAME — BLACK PREMIUM VISUAL SYSTEM
+         ===================================================== -->
+
+    <style>
+
+        :root {
+
+            --bg: #050505;
+            --bg-2: #080808;
+            --card: #0c0c0c;
+
+            --white: #ffffff;
+            --white-soft: #eeeeee;
+
+            --gray-1: #b7b7b7;
+            --gray-2: #777777;
+            --gray-3: #4a4a4a;
+            --gray-4: #282828;
+
+            --border:
+                rgba(255,255,255,0.08);
+
+            --border-strong:
+                rgba(255,255,255,0.16);
+
+            --glass:
+                rgba(255,255,255,0.035);
+
+            --radius-xl: 30px;
+            --radius-lg: 22px;
+            --radius-md: 16px;
+
+            --max-width: 1100px;
+
+            --font:
+                Inter,
+                -apple-system,
+                BlinkMacSystemFont,
+                "SF Pro Display",
+                "SF Pro Text",
+                "Segoe UI",
+                Roboto,
+                Helvetica,
+                Arial,
+                sans-serif;
+        }
+
+
+        /* =====================================================
+           RESET
+           ===================================================== */
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+
+        html {
+            min-height: 100%;
+            background: var(--bg);
+            scroll-behavior: smooth;
+        }
+
+
+        body {
+
+            margin: 0;
+
+            min-height: 100vh;
+
+            color: var(--white);
+
+            background:
+
+                radial-gradient(
+                    circle at 50% -10%,
+                    rgba(255,255,255,0.055),
+                    transparent 35%
+                ),
+
+                radial-gradient(
+                    circle at 100% 50%,
+                    rgba(255,255,255,0.025),
+                    transparent 30%
+                ),
+
+                var(--bg);
+
+            font-family: var(--font);
+
+            -webkit-font-smoothing: antialiased;
+
+            text-rendering: optimizeLegibility;
+
+            overflow-x: hidden;
+        }
+
+
+        body::before {
+
+            content: "";
+
+            position: fixed;
+
+            inset: 0;
+
+            z-index: 9999;
+
+            pointer-events: none;
+
+            opacity: 0.12;
+
+            background-image:
+
+                radial-gradient(
+                    rgba(255,255,255,0.25) 0.5px,
+                    transparent 0.5px
+                );
+
+            background-size: 5px 5px;
+
+            mix-blend-mode: soft-light;
+        }
+
+
+        a {
+            color: inherit;
+        }
+
+
+        button,
+        input,
+        textarea,
+        select {
+            font: inherit;
+        }
+
+
+        button {
+            color: inherit;
+        }
+
+
+        /* =====================================================
+           APPLICATION SHELL
+           ===================================================== */
+
+        #app {
+
+            width: 100%;
+            min-height: 100vh;
+
+            display: flex;
+
+            flex-direction: column;
+        }
+
+
+        /* =====================================================
+           HEADER
+           ===================================================== */
+
+        .life-header {
+
+            width: 100%;
+
+            max-width: var(--max-width);
+
+            margin: 0 auto;
+
+            padding:
+                max(20px, env(safe-area-inset-top))
+                20px
+                14px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+        }
+
+
+        .life-brand {
+
+            display: inline-flex;
+
+            align-items: center;
+
+            gap: 12px;
+
+            text-decoration: none;
+        }
+
+
+        .life-brand-mark {
+
+            width: 38px;
+            height: 38px;
+
+            display: grid;
+
+            place-items: center;
+
+            border:
+                1px solid
+                var(--border-strong);
+
+            border-radius: 12px;
+
+            background:
+
+                linear-gradient(
+                    145deg,
+                    rgba(255,255,255,0.10),
+                    rgba(255,255,255,0.025)
+                );
+
+            box-shadow:
+
+                inset
+                0 1px 0
+                rgba(255,255,255,0.08),
+
+                0 15px 40px
+                rgba(0,0,0,0.40);
+        }
+
+
+        .life-brand-mark::after {
+
+            content: "";
+
+            width: 11px;
+            height: 11px;
+
+            border-radius: 50%;
+
+            background: #ffffff;
+
+            box-shadow:
+                0 0 20px
+                rgba(255,255,255,0.55);
+        }
+
+
+        .life-brand-name {
+
+            font-size: 15px;
+
+            font-weight: 800;
+
+            letter-spacing:
+                0.22em;
+        }
+
+
+        .life-status {
+
+            display: inline-flex;
+
+            align-items: center;
+
+            gap: 8px;
+
+            padding:
+                9px
+                12px;
+
+            border:
+                1px solid
+                var(--border);
+
+            border-radius: 999px;
+
+            background:
+                rgba(255,255,255,0.025);
+
+            color:
+                var(--gray-2);
+
+            font-size: 9px;
+
+            font-weight: 700;
+
+            letter-spacing:
+                0.14em;
+
+            text-transform: uppercase;
+        }
+
+
+        .life-status-dot {
+
+            width: 6px;
+            height: 6px;
+
+            border-radius: 50%;
+
+            background: #ffffff;
+
+            box-shadow:
+                0 0 12px
+                rgba(255,255,255,0.75);
+        }
+
+
+        /* =====================================================
+           MAIN
+           ===================================================== */
+
+        #app-main {
+
+            width: 100%;
+
+            max-width: var(--max-width);
+
+            margin: 0 auto;
+
+            padding:
+                14px
+                20px
+                140px;
+
+            flex: 1;
+        }
+
+
+        /* =====================================================
+           SECTION SYSTEM
+           ===================================================== */
+
+        [data-section-view] {
+
+            display: none;
+
+            width: 100%;
+
+            animation:
+                sectionAppear
+                220ms
+                ease;
+        }
+
+
+        [data-section-view].is-active {
+
+            display: block;
+        }
+
+
+        [data-section-view][hidden] {
+
+            display: none !important;
+        }
+
+
+        @keyframes sectionAppear {
+
+            from {
+
+                opacity: 0;
+
+                transform:
+                    translateY(8px);
+            }
+
+            to {
+
+                opacity: 1;
+
+                transform:
+                    translateY(0);
+            }
+        }
+
+
+        /* =====================================================
+           HERO
+           ===================================================== */
+
+        .life-hero {
+
+            position: relative;
+
+            overflow: hidden;
+
+            min-height: 340px;
+
+            padding:
+                42px
+                30px
+                34px;
+
+            display: flex;
+
+            flex-direction: column;
+
+            justify-content: flex-end;
+
+            border:
+                1px solid
+                var(--border);
+
+            border-radius:
+                var(--radius-xl);
+
+            background:
+
+                linear-gradient(
+                    145deg,
+                    rgba(255,255,255,0.075),
+                    rgba(255,255,255,0.018) 52%,
+                    rgba(255,255,255,0.035)
+                );
+
+            box-shadow:
+
+                0 35px 90px
+                rgba(0,0,0,0.45);
+        }
+
+
+        .life-hero::before {
+
+            content: "";
+
+            position: absolute;
+
+            width: 360px;
+            height: 360px;
+
+            right: -150px;
+            top: -190px;
+
+            border-radius: 50%;
+
+            background:
+                rgba(255,255,255,0.08);
+
+            filter: blur(90px);
+        }
+
+
+        .life-hero::after {
+
+            content: "LIFE";
+
+            position: absolute;
+
+            right: 28px;
+            bottom: -35px;
+
+            color:
+                rgba(255,255,255,0.025);
+
+            font-size:
+                clamp(100px, 24vw, 230px);
+
+            font-weight: 900;
+
+            letter-spacing:
+                -0.08em;
+
+            pointer-events: none;
+        }
+
+
+        .life-eyebrow {
+
+            position: relative;
+
+            margin:
+                0
+                0
+                14px;
+
+            color:
+                var(--gray-2);
+
+            font-size: 10px;
+
+            font-weight: 800;
+
+            letter-spacing:
+                0.22em;
+
+            text-transform: uppercase;
+        }
+
+
+        .life-title {
+
+            position: relative;
+
+            margin: 0;
+
+            font-size:
+                clamp(
+                    46px,
+                    11vw,
+                    84px
+                );
+
+            line-height: 0.90;
+
+            font-weight: 850;
+
+            letter-spacing:
+                -0.065em;
+        }
+
+
+        .life-description {
+
+            position: relative;
+
+            max-width: 600px;
+
+            margin:
+                22px
+                0
+                0;
+
+            color:
+                var(--gray-1);
+
+            font-size: 14px;
+
+            line-height: 1.65;
+        }
+
+
+        /* =====================================================
+           SECTION HEADING
+           ===================================================== */
+
+        .life-section-heading {
+
+            margin:
+                26px
+                2px
+                12px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+        }
+
+
+        .life-section-heading h2 {
+
+            margin: 0;
+
+            color:
+                var(--gray-2);
+
+            font-size: 10px;
+
+            font-weight: 800;
+
+            letter-spacing:
+                0.18em;
+
+            text-transform: uppercase;
+        }
+
+
+        .life-section-heading span {
+
+            color:
+                var(--gray-3);
+
+            font-size: 9px;
+
+            font-weight: 700;
+
+            letter-spacing:
+                0.10em;
+        }
+
+
+        /* =====================================================
+           DASHBOARD MODULE CARDS
+           ===================================================== */
+
+        .life-module-grid {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(3, 1fr);
+
+            gap: 12px;
+        }
+
+
+        .life-module-card {
+
+            position: relative;
+
+            overflow: hidden;
+
+            min-height: 190px;
+
+            padding: 20px;
+
+            display: flex;
+
+            flex-direction: column;
+
+            justify-content: space-between;
+
+            border:
+                1px solid
+                var(--border);
+
+            border-radius:
+                var(--radius-lg);
+
+            background:
+
+                linear-gradient(
+                    150deg,
+                    rgba(255,255,255,0.055),
+                    rgba(255,255,255,0.015)
+                );
+
+            text-decoration: none;
+
+            box-shadow:
+                0 20px 55px
+                rgba(0,0,0,0.28);
+
+            transition:
+                transform 180ms ease,
+                border-color 180ms ease,
+                background 180ms ease;
+        }
+
+
+        .life-module-card:hover {
+
+            transform:
+                translateY(-3px);
+
+            border-color:
+                var(--border-strong);
+
+            background:
+                rgba(255,255,255,0.055);
+        }
+
+
+        .life-module-card:active {
+
+            transform:
+                scale(0.985);
+        }
+
+
+        .life-module-icon {
+
+            width: 46px;
+            height: 46px;
+
+            display: grid;
+
+            place-items: center;
+
+            border:
+                1px solid
+                var(--border-strong);
+
+            border-radius: 14px;
+
+            background:
+                rgba(255,255,255,0.04);
+
+            font-size: 18px;
+
+            font-weight: 700;
+        }
+
+
+        .life-module-arrow {
+
+            position: absolute;
+
+            top: 20px;
+            right: 20px;
+
+            color:
+                var(--gray-2);
+
+            font-size: 14px;
+        }
+
+
+        .life-module-card h3 {
+
+            margin:
+                20px
+                0
+                5px;
+
+            font-size: 18px;
+
+            font-weight: 800;
+
+            letter-spacing:
+                -0.025em;
+        }
+
+
+        .life-module-card p {
+
+            max-width: 210px;
+
+            margin: 0;
+
+            color:
+                var(--gray-2);
+
+            font-size: 11px;
+
+            line-height: 1.5;
+        }
+
+
+        /* =====================================================
+           MODULE CONTENT
+           ===================================================== */
+
+        .module-container {
+
+            width: 100%;
+
+            margin-top: 0;
+        }
+
+
+        .module-placeholder {
+
+            padding:
+                28px;
+
+            border:
+                1px solid
+                var(--border);
+
+            border-radius:
+                var(--radius-lg);
+
+            background:
+                rgba(255,255,255,0.025);
+        }
+
+
+        .module-placeholder h2 {
+
+            margin:
+                0
+                0
+                8px;
+
+            font-size: 24px;
+
+            font-weight: 800;
+        }
+
+
+        .module-placeholder p {
+
+            margin: 0;
+
+            color:
+                var(--gray-2);
+
+            font-size: 12px;
+
+            line-height: 1.5;
+        }
+
+
+        /* =====================================================
+           CURRENT MODULE TOP
+           ===================================================== */
+
+        .module-top {
+
+            margin-bottom: 18px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+        }
+
+
+        .module-kicker {
+
+            margin: 0 0 7px;
+
+            color:
+                var(--gray-2);
+
+            font-size: 9px;
+
+            font-weight: 800;
+
+            letter-spacing:
+                0.18em;
+
+            text-transform: uppercase;
+        }
+
+
+        .module-title {
+
+            margin: 0;
+
+            font-size:
+                clamp(
+                    34px,
+                    8vw,
+                    54px
+                );
+
+            font-weight: 850;
+
+            letter-spacing:
+                -0.055em;
+        }
+
+
+        /* =====================================================
+           SYSTEM CARD
+           ===================================================== */
+
+        .life-system-card {
+
+            margin-top: 24px;
+
+            padding: 22px;
+
+            display: grid;
+
+            grid-template-columns:
+                1fr
+                auto;
+
+            gap: 20px;
+
+            align-items: center;
+
+            border:
+                1px solid
+                var(--border);
+
+            border-radius:
+                var(--radius-lg);
+
+            background:
+                rgba(255,255,255,0.022);
+        }
+
+
+        .life-system-card h2 {
+
+            margin:
+                0
+                0
+                6px;
+
+            font-size: 13px;
+
+            font-weight: 750;
+        }
+
+
+        .life-system-card p {
+
+            max-width: 650px;
+
+            margin: 0;
+
+            color:
+                var(--gray-2);
+
+            font-size: 11px;
+
+            line-height: 1.55;
+        }
+
+
+        .life-system-number {
+
+            text-align: right;
+
+            font-size: 28px;
+
+            font-weight: 800;
+
+            letter-spacing:
+                -0.04em;
+        }
+
+
+        .life-system-number span {
+
+            display: block;
+
+            margin-top: 3px;
+
+            color:
+                var(--gray-3);
+
+            font-size: 8px;
+
+            font-weight: 700;
+
+            letter-spacing:
+                0.12em;
+
+            text-transform: uppercase;
+        }
+
+
+        /* =====================================================
+           BOTTOM NAVIGATION
+           ===================================================== */
+
+        #bottom-navigation {
+
+            position: fixed;
+
+            z-index: 500;
+
+            left: 50%;
+
+            bottom:
+                max(
+                    18px,
+                    env(safe-area-inset-bottom)
+                );
+
+            transform:
+                translateX(-50%);
+
+            width:
+                min(
+                    calc(100% - 28px),
+                    520px
+                );
+
+            padding: 7px;
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(3, 1fr);
+
+            gap: 5px;
+
+            border:
+                1px solid
+                rgba(255,255,255,0.11);
+
+            border-radius: 21px;
+
+            background:
+                rgba(13,13,13,0.88);
+
+            backdrop-filter:
+                blur(24px);
+
+            -webkit-backdrop-filter:
+                blur(24px);
+
+            box-shadow:
+
+                0 25px 70px
+                rgba(0,0,0,0.65),
+
+                inset
+                0 1px 0
+                rgba(255,255,255,0.05);
+        }
+
+
+        .navigation-button {
+
+            min-height: 52px;
+
+            border: 0;
+
+            border-radius: 15px;
+
+            background:
+                transparent;
+
+            color:
+                var(--gray-2);
+
+            display: flex;
+
+            flex-direction: column;
+
+            align-items: center;
+
+            justify-content: center;
+
+            gap: 4px;
+
+            cursor: pointer;
+
+            transition:
+                color 160ms ease,
+                background 160ms ease,
+                transform 160ms ease;
+        }
+
+
+        .navigation-button:hover {
+
+            color:
+                var(--white-soft);
+
+            background:
+                rgba(255,255,255,0.04);
+        }
+
+
+        .navigation-button:active {
+
+            transform:
+                scale(0.96);
+        }
+
+
+        .navigation-button.is-active {
+
+            color:
+                var(--white);
+
+            background:
+                rgba(255,255,255,0.08);
+
+            box-shadow:
+                inset
+                0 1px 0
+                rgba(255,255,255,0.06);
+        }
+
+
+        .navigation-icon {
+
+            font-size: 17px;
+
+            line-height: 1;
+        }
+
+
+        .navigation-label {
+
+            font-size: 8px;
+
+            font-weight: 800;
+
+            letter-spacing:
+                0.10em;
+
+            text-transform: uppercase;
+        }
+
+
+        /* =====================================================
+           FOOTER
+           ===================================================== */
+
+        .life-footer {
+
+            width: 100%;
+
+            max-width: var(--max-width);
+
+            margin: 0 auto;
+
+            padding:
+                4px
+                20px
+                105px;
+
+            text-align: center;
+
+            color:
+                var(--gray-3);
+
+            font-size: 10px;
+
+            font-weight: 600;
+
+            letter-spacing:
+                0.07em;
+        }
+
+
+        .life-footer a {
+
+            color:
+                var(--gray-2);
+
+            text-decoration: none;
+
+            transition:
+                color 160ms ease,
+                opacity 160ms ease;
+        }
+
+
+        .life-footer a:hover {
+
+            color:
+                var(--white);
+        }
+
+
+        .life-footer a:active {
+
+            opacity: 0.6;
+        }
+
+
+        /* =====================================================
+           MOBILE
+           ===================================================== */
+
+        @media (max-width: 700px) {
+
+            .life-header {
+
+                padding-left: 16px;
+                padding-right: 16px;
+            }
+
+
+            #app-main {
+
+                padding-left: 16px;
+                padding-right: 16px;
+            }
+
+
+            .life-hero {
+
+                min-height: 360px;
+
+                padding:
+                    32px
+                    22px
+                    28px;
+            }
+
+
+            .life-module-grid {
+
+                grid-template-columns:
+                    1fr;
+            }
+
+
+            .life-module-card {
+
+                min-height:
+                    145px;
+            }
+
+
+            .life-system-card {
+
+                grid-template-columns:
+                    1fr auto;
+            }
+
+
+            .life-brand-name {
+
+                font-size:
+                    13px;
+            }
+
+
+            .life-status {
+
+                padding:
+                    8px
+                    10px;
+            }
+        }
+
+
+        @media (max-width: 380px) {
+
+            .life-status {
+
+                display: none;
+            }
+
+
+            .life-title {
+
+                font-size:
+                    43px;
+            }
+
+
+            #bottom-navigation {
+
+                width:
+                    calc(100% - 20px);
+            }
+        }
+
+
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+
+                animation-duration:
+                    0.01ms !important;
+
+                transition-duration:
+                    0.01ms !important;
+
+                scroll-behavior:
+                    auto !important;
+            }
+        }
+
+    </style>
+
 </head>
+
+
 <body>
-    <!-- ================================= -->
-    <!-- LIFE GAME APPLICATION -->
-    <!-- ================================= -->
-    <div id="app">
-        <!-- ================================= -->
-        <!-- HEADER -->
-        <!-- ================================= -->
-        <header
-            id="app-header"
-            class="app-header"
+
+
+<div id="app">
+
+
+    <!-- =====================================================
+         HEADER
+         ===================================================== -->
+
+    <header class="life-header">
+
+        <a
+            href="#"
+            class="life-brand"
+            aria-label="LIFE GAME"
         >
-            <div class="app-header__content">
-                <h1 class="app-title">
-                    LIFE GAME
-                </h1>
+
+            <span
+                class="life-brand-mark"
+                aria-hidden="true"
+            ></span>
+
+            <span class="life-brand-name">
+                LIFE GAME
+            </span>
+
+        </a>
+
+
+        <div class="life-status">
+
+            <span
+                class="life-status-dot"
+                aria-hidden="true"
+            ></span>
+
+            SYSTEM ONLINE
+
+        </div>
+
+    </header>
+
+
+
+    <!-- =====================================================
+         APPLICATION MAIN
+         ===================================================== -->
+
+    <main id="app-main">
+
+
+        <!-- =================================================
+             FINANCE
+             ================================================= -->
+
+        <section
+            id="finance-section"
+            data-section-view="finance"
+            class="life-section is-active"
+        >
+
+            <div class="module-top">
+
+                <div>
+
+                    <p class="module-kicker">
+                        Life Module 01
+                    </p>
+
+                    <h1 class="module-title">
+                        Finance
+                    </h1>
+
+                </div>
+
             </div>
-        </header>
-        <!-- ================================= -->
-        <!-- MAIN CONTENT -->
-        <!-- ================================= -->
-        <main
-            id="app-main"
-            class="app-main"
+
+
+            <div
+                id="finance-container"
+                class="module-container"
+            ></div>
+
+        </section>
+
+
+
+        <!-- =================================================
+             HEALTH
+             ================================================= -->
+
+        <section
+            id="health-section"
+            data-section-view="health"
+            class="life-section"
+            hidden
         >
-            <!-- ============================= -->
-            <!-- FINANCE -->
-            <!-- ============================= -->
-            <section
-                id="finance-section"
-                class="app-section"
-                data-section="finance"
-            >
-                <div
-                    id="finance-container"
-                    class="module-container"
-                >
+
+            <div class="module-top">
+
+                <div>
+
+                    <p class="module-kicker">
+                        Life Module 02
+                    </p>
+
+                    <h1 class="module-title">
+                        Health
+                    </h1>
+
                 </div>
-            </section>
-            <!-- ============================= -->
-            <!-- HEALTH -->
-            <!-- ============================= -->
-            <section
-                id="health-section"
-                class="app-section"
-                data-section="health"
-            >
-                <div
-                    id="health-container"
-                    class="module-container"
-                >
-                </div>
-            </section>
-            <!-- ============================= -->
-            <!-- DEVELOPMENT -->
-            <!-- ============================= -->
-            <section
-                id="development-section"
-                class="app-section"
-                data-section="development"
-            >
-                <div
-                    id="development-container"
-                    class="module-container"
-                >
-                </div>
-            </section>
-        </main>
-        <!-- ================================= -->
-        <!-- BOTTOM NAVIGATION -->
-        <!-- ================================= -->
-        <nav
-            id="bottom-navigation"
-            class="bottom-navigation"
-            aria-label="Основная навигация"
+
+            </div>
+
+
+            <div
+                id="health-container"
+                class="module-container"
+            ></div>
+
+        </section>
+
+
+
+        <!-- =================================================
+             DEVELOPMENT
+             ================================================= -->
+
+        <section
+            id="development-section"
+            data-section-view="development"
+            class="life-section"
+            hidden
         >
-            <!-- FINANCE -->
-            <button
-                type="button"
-                class="navigation-button"
-                data-section="finance"
-                aria-label="Финансы"
+
+            <div class="module-top">
+
+                <div>
+
+                    <p class="module-kicker">
+                        Life Module 03
+                    </p>
+
+                    <h1 class="module-title">
+                        Development
+                    </h1>
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="development-container"
+                class="module-container"
+            ></div>
+
+        </section>
+
+
+
+        <!-- =================================================
+             SYSTEM OVERVIEW
+             ================================================= -->
+
+        <section class="life-system-card">
+
+            <div>
+
+                <h2>
+                    Your life. Your system.
+                </h2>
+
+                <p>
+                    LIFE GAME построен как единая система
+                    независимых модулей. Каждый раздел имеет
+                    собственную логику и интерфейс, а центральное
+                    приложение отвечает за их взаимодействие.
+                </p>
+
+            </div>
+
+
+            <div class="life-system-number">
+
+                03
+
+                <span>
+                    modules
+                </span>
+
+            </div>
+
+        </section>
+
+
+    </main>
+
+
+
+    <!-- =====================================================
+         BOTTOM NAVIGATION
+         ===================================================== -->
+
+    <nav
+        id="bottom-navigation"
+        aria-label="Основная навигация"
+    >
+
+
+        <button
+            type="button"
+            class="navigation-button is-active"
+            data-section="finance"
+            aria-current="page"
+        >
+
+            <span
+                class="navigation-icon"
+                aria-hidden="true"
             >
-                <span
-                    class="navigation-button__icon"
-                    aria-hidden="true"
-                >
-                    ₽
-                </span>
-                <span class="navigation-button__label">
-                    Финансы
-                </span>
-            </button>
-            <!-- HEALTH -->
-            <button
-                type="button"
-                class="navigation-button"
-                data-section="health"
-                aria-label="Здоровье"
+                ₽
+            </span>
+
+            <span class="navigation-label">
+                Finance
+            </span>
+
+        </button>
+
+
+
+        <button
+            type="button"
+            class="navigation-button"
+            data-section="health"
+        >
+
+            <span
+                class="navigation-icon"
+                aria-hidden="true"
             >
-                <span
-                    class="navigation-button__icon"
-                    aria-hidden="true"
-                >
-                    ♥
-                </span>
-                <span class="navigation-button__label">
-                    Здоровье
-                </span>
-            </button>
-            <!-- DEVELOPMENT -->
-            <button
-                type="button"
-                class="navigation-button"
-                data-section="development"
-                aria-label="Развитие"
+                +
+            </span>
+
+            <span class="navigation-label">
+                Health
+            </span>
+
+        </button>
+
+
+
+        <button
+            type="button"
+            class="navigation-button"
+            data-section="development"
+        >
+
+            <span
+                class="navigation-icon"
+                aria-hidden="true"
             >
-                <span
-                    class="navigation-button__icon"
-                    aria-hidden="true"
-                >
-                    ★
-                </span>
-                <span class="navigation-button__label">
-                    Развитие
-                </span>
-            </button>
-        </nav>
-    </div>
-    <!-- ================================= -->
-    <!-- APPLICATION -->
-    <!-- ================================= -->
-    <script
-        type="module"
-        src="./js/app.js"
-    ></script>
+                ◇
+            </span>
+
+            <span class="navigation-label">
+                Development
+            </span>
+
+        </button>
+
+    </nav>
+
+
+
+    <!-- =====================================================
+         FOOTER
+         ===================================================== -->
+
+    <footer class="life-footer">
+
+        <a
+            href="https://t.me/shkeltinsh"
+            target="_blank"
+            rel="noopener noreferrer"
+        >
+            Created by @shkeltinsh
+        </a>
+
+    </footer>
+
+
+</div>
+
+
+
+<!-- =========================================================
+     APPLICATION CORE
+
+     app.js:
+     - imports modules
+     - finds required DOM
+     - initializes modules
+     - controls sections
+     - controls bottom navigation
+     ========================================================= -->
+
+<script
+    type="module"
+    src="js/app.js"
+></script>
+
+
 </body>
+
 </html>
