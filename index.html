@@ -1,1 +1,190 @@
-index.html
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+    >
+    <meta
+        name="theme-color"
+        content="#050505"
+    >
+    <meta
+        name="apple-mobile-web-app-capable"
+        content="yes"
+    >
+    <meta
+        name="mobile-web-app-capable"
+        content="yes"
+    >
+    <title>LIFE GAME</title>
+    <!-- ============================= -->
+    <!-- GLOBAL STYLES -->
+    <!-- ============================= -->
+    <link
+        rel="stylesheet"
+        href="./css/base.css"
+    >
+    <link
+        rel="stylesheet"
+        href="./css/layout.css"
+    >
+    <link
+        rel="stylesheet"
+        href="./css/components.css"
+    >
+    <!-- ============================= -->
+    <!-- MODULE STYLES -->
+    <!-- ============================= -->
+    <link
+        rel="stylesheet"
+        href="./modules/finance/finance.css"
+    >
+    <link
+        rel="stylesheet"
+        href="./modules/health/health.css"
+    >
+    <link
+        rel="stylesheet"
+        href="./modules/development/development.css"
+    >
+</head>
+<body>
+    <!-- ================================= -->
+    <!-- LIFE GAME APPLICATION -->
+    <!-- ================================= -->
+    <div id="app">
+        <!-- ================================= -->
+        <!-- HEADER -->
+        <!-- ================================= -->
+        <header
+            id="app-header"
+            class="app-header"
+        >
+            <div class="app-header__content">
+                <h1 class="app-title">
+                    LIFE GAME
+                </h1>
+            </div>
+        </header>
+        <!-- ================================= -->
+        <!-- MAIN CONTENT -->
+        <!-- ================================= -->
+        <main
+            id="app-main"
+            class="app-main"
+        >
+            <!-- ============================= -->
+            <!-- FINANCE -->
+            <!-- ============================= -->
+            <section
+                id="finance-section"
+                class="app-section"
+                data-section="finance"
+            >
+                <div
+                    id="finance-container"
+                    class="module-container"
+                >
+                </div>
+            </section>
+            <!-- ============================= -->
+            <!-- HEALTH -->
+            <!-- ============================= -->
+            <section
+                id="health-section"
+                class="app-section"
+                data-section="health"
+            >
+                <div
+                    id="health-container"
+                    class="module-container"
+                >
+                </div>
+            </section>
+            <!-- ============================= -->
+            <!-- DEVELOPMENT -->
+            <!-- ============================= -->
+            <section
+                id="development-section"
+                class="app-section"
+                data-section="development"
+            >
+                <div
+                    id="development-container"
+                    class="module-container"
+                >
+                </div>
+            </section>
+        </main>
+        <!-- ================================= -->
+        <!-- BOTTOM NAVIGATION -->
+        <!-- ================================= -->
+        <nav
+            id="bottom-navigation"
+            class="bottom-navigation"
+            aria-label="Основная навигация"
+        >
+            <!-- FINANCE -->
+            <button
+                type="button"
+                class="navigation-button"
+                data-section="finance"
+                aria-label="Финансы"
+            >
+                <span
+                    class="navigation-button__icon"
+                    aria-hidden="true"
+                >
+                    ₽
+                </span>
+                <span class="navigation-button__label">
+                    Финансы
+                </span>
+            </button>
+            <!-- HEALTH -->
+            <button
+                type="button"
+                class="navigation-button"
+                data-section="health"
+                aria-label="Здоровье"
+            >
+                <span
+                    class="navigation-button__icon"
+                    aria-hidden="true"
+                >
+                    ♥
+                </span>
+                <span class="navigation-button__label">
+                    Здоровье
+                </span>
+            </button>
+            <!-- DEVELOPMENT -->
+            <button
+                type="button"
+                class="navigation-button"
+                data-section="development"
+                aria-label="Развитие"
+            >
+                <span
+                    class="navigation-button__icon"
+                    aria-hidden="true"
+                >
+                    ★
+                </span>
+                <span class="navigation-button__label">
+                    Развитие
+                </span>
+            </button>
+        </nav>
+    </div>
+    <!-- ================================= -->
+    <!-- APPLICATION -->
+    <!-- ================================= -->
+    <script
+        type="module"
+        src="./js/app.js"
+    ></script>
+</body>
+</html>
