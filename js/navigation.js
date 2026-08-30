@@ -2,40 +2,18 @@
    LIFE GAME 2.0
    NAVIGATION SYSTEM
    ========================================= */
-/*
-   navigation.js отвечает только за:
-   - переключение основных разделов;
-   - активное состояние кнопок;
-   - определение текущего раздела.
-   Разделы:
-   finance
-   health
-   development
-*/
-/* =========================================
-   CONFIGURATION
-   ========================================= */
 const SECTIONS = [
     "finance",
     "health",
     "development"
 ];
-const DEFAULT_SECTION =
-    "finance";
+const DEFAULT_SECTION = "finance";
+let currentSection = DEFAULT_SECTION;
 /* =========================================
-   STATE
+   CHECK SECTION
    ========================================= */
-let currentSection =
-    DEFAULT_SECTION;
-/* =========================================
-   VALIDATE SECTION
-   ========================================= */
-function isValidSection(
-    sectionName
-) {
-    return SECTIONS.includes(
-        sectionName
-    );
+function isValidSection(sectionName) {
+    return SECTIONS.includes(sectionName);
 }
 /* =========================================
    GET CURRENT SECTION
@@ -44,88 +22,89 @@ function getCurrentSection() {
     return currentSection;
 }
 /* =========================================
-   SHOW SECTION
+   SET ACTIVE SECTION
    ========================================= */
-function setActiveSection(
-    sectionName
-) {
-    if (
-        !isValidSection(sectionName)
-    ) {
+function setActiveSection(sectionName) {
+    if (!isValidSection(sectionName)) {
         console.warn(
-            "LIFE GAME: Неизвестный раздел:",
+            "LIFE GAME: Unknown section:",
             sectionName
         );
         return false;
     }
     /*
-       Получаем все основные секции.
+       Получаем все элементы,
+       у которых есть data-section.
     */
-    const sections =
+    const elements =
         document.querySelectorAll(
-            ".app-section"
+            "[data-section]"
         );
-    sections.forEach(
-        section => {
-            const name =
-                section.dataset.section;
-            const active =
-                name === sectionName;
-            section.classList.toggle(
-                "is-active",
-                active
-            );
-            section.hidden =
-                !active;
-        }
-    );
-    /*
-       Получаем кнопки нижней навигации.
-    */
-    const buttons =
-        document.querySelectorAll(
-            ".navigation-button"
-        );
-    buttons.forEach(
-        button => {
-            const name =
-                button.dataset.section;
-            const active =
-                name === sectionName;
-            button.classList.toggle(
+    elements.forEach(element => {
+        const name =
+            element.dataset.section;
+        const active =
+            name === sectionName;
+        /*
+           Если это кнопка навигации —
+           меняем её активное состояние.
+        */
+        if (
+            element.closest(
+                "#bottom-navigation"
+            )
+        ) {
+            element.classList.toggle(
                 "is-active",
                 active
             );
             if (active) {
-                button.setAttribute(
+                element.setAttribute(
                     "aria-current",
                     "page"
                 );
             } else {
-                button.removeAttribute(
+                element.removeAttribute(
                     "aria-current"
                 );
             }
+            return;
         }
-    );
-    /*
-       Запоминаем текущий раздел.
-    */
+        /*
+           Если это основной раздел —
+           показываем или скрываем его.
+        */
+        element.classList.toggle(
+            "is-active",
+            active
+        );
+        element.hidden =
+            !active;
+    });
     currentSection =
         sectionName;
     return true;
 }
 /* =========================================
-   CLICK HANDLER
+   NAVIGATION CLICK
    ========================================= */
-function handleNavigationClick(
-    event
-) {
+function handleNavigationClick(event) {
     const button =
         event.target.closest(
-            ".navigation-button"
+            "[data-section]"
         );
     if (!button) {
+        return;
+    }
+    /*
+       Защита от случайного
+       поиска элементов вне навигации.
+    */
+    if (
+        !button.closest(
+            "#bottom-navigation"
+        )
+    ) {
         return;
     }
     const sectionName =
@@ -144,22 +123,26 @@ function initNavigation() {
         );
     if (!navigation) {
         console.error(
-            "LIFE GAME: Navigation container не найден."
+            "LIFE GAME: #bottom-navigation не найден."
         );
         return false;
     }
     /*
-       Устанавливаем обработчик
-       только один раз.
+       Защита от повторного
+       добавления обработчика.
     */
+    if (
+        navigation.dataset.navigationInitialized ===
+        "true"
+    ) {
+        return true;
+    }
     navigation.addEventListener(
         "click",
         handleNavigationClick
     );
-    /*
-       Открываем Finance
-       при запуске приложения.
-    */
+    navigation.dataset.navigationInitialized =
+        "true";
     setActiveSection(
         DEFAULT_SECTION
     );
