@@ -1,233 +1,336 @@
 /* =========================================================
    LIFE GAME 2.0
    FINANCE MODULE
-   ---------------------------------------------------------
-   Financial tracking and Financial Stability analysis.
-   IMPORTANT:
-   This module contains NO XP.
-   This module contains NO LEVELS.
-   This module contains NO GAMIFICATION.
-   The Finance module measures the user's actual
-   financial condition and its dynamics.
+   =========================================================
+   Finance is an analytical module.
+
+   NO XP
+   NO LEVELS
+   NO GAMIFICATION
+
+   Main blocks:
+
+   1. Liquid Assets
+   2. Essential Expenses
+   3. Income
+   4. Financial Obligations
+   5. Income Statistics
+   6. Financial Stability
+
+   Financial Stability Score:
+
+   Liquidity              30%
+   Cash Flow              25%
+   Debt                   20%
+   Income Stability       15%
+   Net Worth              10%
    ========================================================= */
+
+
 /* =========================================================
    STORAGE
    ========================================================= */
-const FINANCE_STORAGE_KEY = "lifegame_finance_v1";
+
+const FINANCE_STORAGE_KEY = "lifegame_finance";
+
+
 /* =========================================================
    DEFAULT STATE
    ========================================================= */
-const defaultFinanceState = {
+
+const DEFAULT_FINANCE_STATE = {
+
     liquidAssets: 0,
+
     essentialExpenses: 0,
+
     currentIncome: 0,
-    financialObligations: 0,
+
+    totalLiabilities: 0,
+
+    monthlyDebtPayments: 0,
+
     incomeHistory: []
+
 };
+
+
 /* =========================================================
    STATE
    ========================================================= */
+
 let financeState = loadFinanceState();
+
+
 /* =========================================================
-   LOAD STATE
+   LOAD
    ========================================================= */
+
 function loadFinanceState() {
+
     try {
+
         const saved =
             localStorage.getItem(
                 FINANCE_STORAGE_KEY
             );
+
         if (!saved) {
+
             return {
-                ...defaultFinanceState
+                ...DEFAULT_FINANCE_STATE,
+                incomeHistory: []
             };
+
         }
+
         const parsed =
             JSON.parse(saved);
+
         return {
-            ...defaultFinanceState,
+
+            ...DEFAULT_FINANCE_STATE,
             ...parsed,
+
             incomeHistory:
-                Array.isArray(parsed.incomeHistory)
+                Array.isArray(
+                    parsed.incomeHistory
+                )
                     ? parsed.incomeHistory
                     : []
+
         };
+
     } catch (error) {
+
         console.error(
-            "LIFE GAME: Не удалось загрузить финансовые данные.",
+            "Finance: failed to load state",
             error
         );
+
         return {
-            ...defaultFinanceState
+            ...DEFAULT_FINANCE_STATE,
+            incomeHistory: []
         };
+
     }
+
 }
+
+
 /* =========================================================
-   SAVE STATE
+   SAVE
    ========================================================= */
+
 function saveFinanceState() {
+
     try {
+
         localStorage.setItem(
             FINANCE_STORAGE_KEY,
             JSON.stringify(financeState)
         );
+
     } catch (error) {
+
         console.error(
-            "LIFE GAME: Не удалось сохранить финансовые данные.",
+            "Finance: failed to save state",
             error
         );
+
     }
+
 }
+
+
 /* =========================================================
    NUMBER HELPERS
    ========================================================= */
-function parseMoney(value) {
+
+function toNumber(value) {
+
     if (
         value === null ||
-        value === undefined
+        value === undefined ||
+        value === ""
     ) {
+
         return 0;
+
     }
-    const normalized =
-        String(value)
-            .replace(/\s/g, "")
-            .replace(",", ".")
-            .replace(/[^\d.-]/g, "");
+
     const number =
-        Number(normalized);
-    if (!Number.isFinite(number)) {
-        return 0;
-    }
-    return Math.max(0, number);
+        Number(
+            String(value)
+                .replace(/\s/g, "")
+                .replace(",", ".")
+        );
+
+    return Number.isFinite(number)
+        ? Math.max(0, number)
+        : 0;
+
 }
+
+
 function formatMoney(value) {
-    const number =
-        Number(value) || 0;
+
     return new Intl.NumberFormat(
         "ru-RU",
         {
             maximumFractionDigits: 0
         }
-    ).format(number);
-}
-function formatPercent(value) {
-    if (!Number.isFinite(value)) {
-        return "—";
-    }
-    return (
-        (value * 100)
-            .toFixed(1)
-            .replace(".", ",")
-        + "%"
+    ).format(
+        Math.max(
+            0,
+            Number(value) || 0
+        )
     );
+
 }
-/* =========================================================
-   SCORE CONFIGURATION
-   ========================================================= */
-const FINANCIAL_STABILITY_CONFIG = {
-    weights: {
-        liquidity: 0.30,
-        cashFlow: 0.25,
-        debt: 0.20,
-        incomeStability: 0.15,
-        netWorth: 0.10
+
+
+function formatScore(value) {
+
+    if (
+        !Number.isFinite(value)
+    ) {
+
+        return "—";
+
     }
-};
+
+    return Math.round(value);
+
+}
+
+
 /* =========================================================
-   LINEAR INTERPOLATION
+   SCORE NORMALIZATION
    ========================================================= */
-function interpolateScore(
+
+function interpolate(
     value,
-    scale
+    points
 ) {
-    if (!Number.isFinite(value)) {
+
+    if (
+        !Number.isFinite(value)
+    ) {
+
         return null;
+
     }
-    const points =
-        [...scale]
-            .sort(
-                (a, b) =>
-                    a.value - b.value
-            );
+
     if (
-        value <=
-        points[0].value
+        value <= points[0].value
     ) {
+
         return points[0].score;
+
     }
+
+    const last =
+        points[points.length - 1];
+
     if (
-        value >=
-        points[points.length - 1].value
+        value >= last.value
     ) {
-        return points[
-            points.length - 1
-        ].score;
+
+        return last.score;
+
     }
+
     for (
         let i = 0;
         i < points.length - 1;
         i++
     ) {
-        const current =
-            points[i];
-        const next =
-            points[i + 1];
+
+        const a = points[i];
+        const b = points[i + 1];
+
         if (
-            value >= current.value &&
-            value <= next.value
+            value >= a.value &&
+            value <= b.value
         ) {
+
             const ratio =
                 (
-                    value -
-                    current.value
+                    value - a.value
                 ) /
                 (
-                    next.value -
-                    current.value
+                    b.value - a.value
                 );
+
             return (
-                current.score +
+                a.score +
                 (
-                    next.score -
-                    current.score
+                    b.score -
+                    a.score
                 ) *
                 ratio
             );
+
         }
+
     }
+
     return null;
+
 }
+
+
 /* =========================================================
-   1. LIQUIDITY SCORE
-   ---------------------------------------------------------
+   1. LIQUIDITY
+   =========================================================
    Liquid Assets /
    Essential Monthly Expenses
+
+   Result:
+   number of months that can be covered
+   without income.
    ========================================================= */
-function calculateLiquidityScore() {
+
+function calculateLiquidity() {
+
     const liquidAssets =
-        parseMoney(
+        toNumber(
             financeState.liquidAssets
         );
-    const essentialExpenses =
-        parseMoney(
+
+    const expenses =
+        toNumber(
             financeState.essentialExpenses
         );
+
     if (
-        essentialExpenses <= 0
+        expenses <= 0
     ) {
-        return null;
+
+        return {
+            coverage: null,
+            score: null
+        };
+
     }
+
     const coverage =
         liquidAssets /
-        essentialExpenses;
-    if (coverage < 1) {
-        return 0;
-    }
-    return Math.max(
-        0,
-        Math.min(
-            100,
-            interpolateScore(
+        expenses;
+
+    let score;
+
+    if (
+        coverage < 1
+    ) {
+
+        score = 0;
+
+    } else {
+
+        score =
+            interpolate(
                 coverage,
                 [
                     {
@@ -251,45 +354,71 @@ function calculateLiquidityScore() {
                         score: 100
                     }
                 ]
-            )
-        )
-    );
+            );
+
+    }
+
+    return {
+        coverage,
+        score
+    };
+
 }
+
+
 /* =========================================================
-   2. CASH FLOW SCORE
-   ---------------------------------------------------------
-   (Income - Expenses) / Income
+   2. CASH FLOW
+   =========================================================
+   (Income - Essential Expenses) /
+   Income
    ========================================================= */
-function calculateCashFlowScore() {
+
+function calculateCashFlow() {
+
     const income =
-        parseMoney(
+        toNumber(
             financeState.currentIncome
         );
+
     const expenses =
-        parseMoney(
+        toNumber(
             financeState.essentialExpenses
         );
-    if (income <= 0) {
-        return null;
+
+    if (
+        income <= 0
+    ) {
+
+        return {
+            savingsRate: null,
+            score: null
+        };
+
     }
+
     const savingsRate =
         (
             income -
             expenses
         ) /
         income;
-    if (savingsRate <= 0) {
-        return 0;
-    }
-    return Math.max(
-        0,
-        Math.min(
-            100,
-            interpolateScore(
+
+    let score;
+
+    if (
+        savingsRate <= 0
+    ) {
+
+        score = 0;
+
+    } else {
+
+        score =
+            interpolate(
                 savingsRate,
                 [
                     {
-                        value: 0.00,
+                        value: 0,
                         score: 0
                     },
                     {
@@ -313,88 +442,117 @@ function calculateCashFlowScore() {
                         score: 100
                     }
                 ]
-            )
-        )
-    );
+            );
+
+    }
+
+    return {
+        savingsRate,
+        score
+    };
+
 }
+
+
 /* =========================================================
-   3. DEBT SCORE
-   ---------------------------------------------------------
-   Financial Obligations /
+   3. DEBT
+   =========================================================
+   Monthly Debt Payments /
    Monthly Income
-   IMPORTANT:
-   The entered "financial obligations" are treated as
-   monthly debt payments for the current version.
+
+   Lower ratio = better stability.
    ========================================================= */
-function calculateDebtScore() {
-    const obligations =
-        parseMoney(
-            financeState.financialObligations
+
+function calculateDebt() {
+
+    const payments =
+        toNumber(
+            financeState.monthlyDebtPayments
         );
+
     const income =
-        parseMoney(
+        toNumber(
             financeState.currentIncome
         );
-    if (income <= 0) {
-        return null;
-    }
-    const debtServiceRatio =
-        obligations /
-        income;
+
     if (
-        debtServiceRatio >= 0.50
+        income <= 0
     ) {
-        return 0;
+
+        return {
+            debtServiceRatio: null,
+            score: null
+        };
+
     }
-    return Math.max(
-        0,
-        Math.min(
-            100,
-            interpolateScore(
-                debtServiceRatio,
-                [
-                    {
-                        value: 0.00,
-                        score: 100
-                    },
-                    {
-                        value: 0.10,
-                        score: 90
-                    },
-                    {
-                        value: 0.20,
-                        score: 75
-                    },
-                    {
-                        value: 0.30,
-                        score: 55
-                    },
-                    {
-                        value: 0.40,
-                        score: 30
-                    },
-                    {
-                        value: 0.50,
-                        score: 0
-                    }
-                ]
-            )
-        )
-    );
+
+    const ratio =
+        payments /
+        income;
+
+    const score =
+        interpolate(
+            ratio,
+            [
+                {
+                    value: 0,
+                    score: 100
+                },
+                {
+                    value: 0.10,
+                    score: 90
+                },
+                {
+                    value: 0.20,
+                    score: 75
+                },
+                {
+                    value: 0.30,
+                    score: 55
+                },
+                {
+                    value: 0.40,
+                    score: 30
+                },
+                {
+                    value: 0.50,
+                    score: 0
+                }
+            ]
+        );
+
+    return {
+        debtServiceRatio: ratio,
+        score
+    };
+
 }
+
+
 /* =========================================================
-   4. INCOME STABILITY SCORE
-   ---------------------------------------------------------
+   4. INCOME STABILITY
+   =========================================================
    Coefficient of Variation:
+
    Standard Deviation /
-   Average Monthly Income
-   Minimum required history:
+   Average Income
+
+   Minimum:
    3 months.
    ========================================================= */
-function calculateAverage(values) {
-    if (!values.length) {
+
+function calculateAverage(
+    values
+) {
+
+    if (
+        !values.length
+    ) {
+
         return null;
+
     }
+
     return (
         values.reduce(
             (sum, value) =>
@@ -403,22 +561,33 @@ function calculateAverage(values) {
         ) /
         values.length
     );
+
 }
+
+
 function calculateStandardDeviation(
     values
 ) {
+
     if (
         values.length < 2
     ) {
+
         return null;
+
     }
+
     const average =
         calculateAverage(
             values
         );
+
     const variance =
         values.reduce(
-            (sum, value) =>
+            (
+                sum,
+                value
+            ) =>
                 sum +
                 Math.pow(
                     value - average,
@@ -427,63 +596,90 @@ function calculateStandardDeviation(
             0
         ) /
         values.length;
+
     return Math.sqrt(
         variance
     );
+
 }
-function calculateIncomeStabilityScore() {
+
+
+function calculateIncomeStability() {
+
     const values =
-        financeState.incomeHistory
+        financeState
+            .incomeHistory
             .map(
-                item =>
-                    parseMoney(
-                        item.amount
+                entry =>
+                    toNumber(
+                        entry.amount
                     )
             )
             .filter(
                 value =>
                     value > 0
             );
+
     if (
         values.length < 3
     ) {
-        return null;
+
+        return {
+            average: null,
+            standardDeviation: null,
+            coefficientOfVariation: null,
+            score: null
+        };
+
     }
+
     const average =
         calculateAverage(
             values
         );
+
     const standardDeviation =
         calculateStandardDeviation(
             values
         );
+
     if (
         !average ||
         standardDeviation === null
     ) {
-        return null;
+
+        return {
+            average,
+            standardDeviation,
+            coefficientOfVariation: null,
+            score: null
+        };
+
     }
-    const coefficientOfVariation =
+
+    const cv =
         standardDeviation /
         average;
+
+    let score;
+
     if (
-        coefficientOfVariation >=
-        0.50
+        cv <= 0.05
     ) {
-        return 0;
-    }
-    if (
-        coefficientOfVariation <=
-        0.05
+
+        score = 100;
+
+    } else if (
+        cv >= 0.50
     ) {
-        return 100;
-    }
-    return Math.max(
-        0,
-        Math.min(
-            100,
-            interpolateScore(
-                coefficientOfVariation,
+
+        score = 0;
+
+    } else {
+
+        score =
+            interpolate(
+                cv,
                 [
                     {
                         value: 0.05,
@@ -510,65 +706,99 @@ function calculateIncomeStabilityScore() {
                         score: 0
                     }
                 ]
-            )
-        )
-    );
+            );
+
+    }
+
+    return {
+
+        average,
+
+        standardDeviation,
+
+        coefficientOfVariation: cv,
+
+        score
+
+    };
+
 }
+
+
 /* =========================================================
-   5. NET WORTH SCORE
-   ---------------------------------------------------------
-   Current version:
+   5. NET WORTH
+   =========================================================
+   Temporary model:
+
    Net Worth =
-   Liquid Assets - Financial Obligations
-   This is deliberately conservative.
-   Later the module can add:
-   - property
-   - investments
-   - vehicles
-   - business assets
-   - other assets
+   Liquid Assets - Total Liabilities
+
+   Final architecture can later include
+   additional assets.
    ========================================================= */
-function calculateNetWorthScore() {
-    const liquidAssets =
-        parseMoney(
+
+function calculateNetWorth() {
+
+    const assets =
+        toNumber(
             financeState.liquidAssets
         );
+
     const liabilities =
-        parseMoney(
-            financeState.financialObligations
+        toNumber(
+            financeState.totalLiabilities
         );
+
     const income =
-        parseMoney(
+        toNumber(
             financeState.currentIncome
         );
-    if (income <= 0) {
-        return null;
+
+    if (
+        income <= 0
+    ) {
+
+        return {
+
+            netWorth:
+                assets -
+                liabilities,
+
+            coverage: null,
+
+            score: null
+
+        };
+
     }
+
     const netWorth =
-        liquidAssets -
+        assets -
         liabilities;
+
     const annualIncome =
         income * 12;
-    if (
-        annualIncome <= 0
-    ) {
-        return null;
-    }
+
     const coverage =
         netWorth /
         annualIncome;
-    if (coverage <= 0) {
-        return 0;
-    }
-    return Math.max(
-        0,
-        Math.min(
-            100,
-            interpolateScore(
+
+    let score;
+
+    if (
+        coverage <= 0
+    ) {
+
+        score = 0;
+
+    } else {
+
+        score =
+            interpolate(
                 coverage,
                 [
                     {
-                        value: 0.00,
+                        value: 0,
                         score: 0
                     },
                     {
@@ -580,71 +810,158 @@ function calculateNetWorthScore() {
                         score: 50
                     },
                     {
-                        value: 1.00,
+                        value: 1,
                         score: 70
                     },
                     {
-                        value: 2.00,
+                        value: 2,
                         score: 85
                     },
                     {
-                        value: 3.00,
+                        value: 3,
                         score: 100
                     }
                 ]
-            )
-        )
-    );
-}
-/* =========================================================
-   FINANCIAL STABILITY
-   ========================================================= */
-function calculateFinancialStability() {
-    const components = {
-        liquidity:
-            calculateLiquidityScore(),
-        cashFlow:
-            calculateCashFlowScore(),
-        debt:
-            calculateDebtScore(),
-        incomeStability:
-            calculateIncomeStabilityScore(),
-        netWorth:
-            calculateNetWorthScore()
+            );
+
+    }
+
+    return {
+
+        netWorth,
+
+        coverage,
+
+        score
+
     };
-    const weights =
-        FINANCIAL_STABILITY_CONFIG.weights;
-    let weightedScore = 0;
-    let availableWeight = 0;
+
+}
+
+
+/* =========================================================
+   FINANCIAL STABILITY SCORE
+   ========================================================= */
+
+function calculateFinancialStability() {
+
+    const liquidity =
+        calculateLiquidity();
+
+    const cashFlow =
+        calculateCashFlow();
+
+    const debt =
+        calculateDebt();
+
+    const incomeStability =
+        calculateIncomeStability();
+
+    const netWorth =
+        calculateNetWorth();
+
+
+    const components = {
+
+        liquidity:
+            liquidity.score,
+
+        cashFlow:
+            cashFlow.score,
+
+        debt:
+            debt.score,
+
+        incomeStability:
+            incomeStability.score,
+
+        netWorth:
+            netWorth.score
+
+    };
+
+
+    const weights = {
+
+        liquidity: 0.30,
+
+        cashFlow: 0.25,
+
+        debt: 0.20,
+
+        incomeStability: 0.15,
+
+        netWorth: 0.10
+
+    };
+
+
+    let total = 0;
+
+    let weight = 0;
+
+
     Object.keys(
         components
     ).forEach(
         key => {
+
             const score =
                 components[key];
+
             if (
                 Number.isFinite(score)
             ) {
-                weightedScore +=
+
+                total +=
                     score *
                     weights[key];
-                availableWeight +=
+
+                weight +=
                     weights[key];
+
             }
+
         }
     );
+
+
     if (
-        availableWeight <= 0
+        weight === 0
     ) {
+
         return {
+
             score: null,
-            components
+
+            components,
+
+            raw: {
+
+                liquidity,
+
+                cashFlow,
+
+                debt,
+
+                incomeStability,
+
+                netWorth
+
+            }
+
         };
+
     }
+
+
     const score =
-        weightedScore /
-        availableWeight;
+        total /
+        weight;
+
+
     return {
+
         score:
             Math.round(
                 Math.max(
@@ -655,234 +972,604 @@ function calculateFinancialStability() {
                     )
                 )
             ),
-        components
+
+        components,
+
+        raw: {
+
+            liquidity,
+
+            cashFlow,
+
+            debt,
+
+            incomeStability,
+
+            netWorth
+
+        }
+
     };
+
 }
+
+
 /* =========================================================
    FINANCIAL STABILITY STATUS
    ========================================================= */
+
 function getFinancialStabilityStatus(
     score
 ) {
+
     if (
         !Number.isFinite(score)
     ) {
-        return {
-            key:
-                "insufficient-data",
-            label:
-                "Недостаточно данных"
-        };
+
+        return "Недостаточно данных";
+
     }
-    if (score < 40) {
-        return {
-            key:
-                "vulnerable",
-            label:
-                "Уязвимое положение"
-        };
+
+    if (
+        score < 40
+    ) {
+
+        return "Уязвимое положение";
+
     }
-    if (score < 60) {
-        return {
-            key:
-                "developing",
-            label:
-                "Требует внимания"
-        };
+
+    if (
+        score < 60
+    ) {
+
+        return "Требует внимания";
+
     }
-    if (score < 80) {
-        return {
-            key:
-                "stable",
-            label:
-                "Стабильное положение"
-        };
+
+    if (
+        score < 80
+    ) {
+
+        return "Стабильное положение";
+
     }
-    if (score < 90) {
-        return {
-            key:
-                "strong",
-            label:
-                "Сильное положение"
-        };
+
+    if (
+        score < 90
+    ) {
+
+        return "Сильное положение";
+
     }
-    return {
-        key:
-            "resilient",
-        label:
-            "Высокая устойчивость"
-    };
+
+    return "Высокая устойчивость";
+
 }
+
+
 /* =========================================================
    INCOME STATISTICS
    ========================================================= */
+
 function getIncomeStatistics() {
+
     const values =
-        financeState.incomeHistory
+        financeState
+            .incomeHistory
             .map(
-                item =>
-                    parseMoney(
-                        item.amount
+                entry =>
+                    toNumber(
+                        entry.amount
                     )
             )
             .filter(
                 value =>
                     value > 0
             );
-    if (!values.length) {
+
+
+    if (
+        values.length === 0
+    ) {
+
         return {
+
             total: 0,
+
             average: 0,
+
             minimum: 0,
+
             maximum: 0,
+
             months: 0
+
         };
+
     }
+
+
     const total =
         values.reduce(
-            (sum, value) =>
+            (
+                sum,
+                value
+            ) =>
                 sum + value,
             0
         );
-    const average =
-        total /
-        values.length;
+
+
     return {
+
         total,
-        average,
+
+        average:
+            total /
+            values.length,
+
         minimum:
-            Math.min(...values),
+            Math.min(
+                ...values
+            ),
+
         maximum:
-            Math.max(...values),
+            Math.max(
+                ...values
+            ),
+
         months:
             values.length
+
     };
+
 }
+
+
 /* =========================================================
-   RENDER HELPERS
+   INCOME HISTORY
    ========================================================= */
-function renderValue(
-    value
-) {
+
+function renderIncomeHistory() {
+
     if (
-        !Number.isFinite(value)
+        !financeState
+            .incomeHistory
+            .length
     ) {
-        return "—";
+
+        return `
+            <div class="finance-empty">
+                История доходов пока пуста
+            </div>
+        `;
+
     }
-    return formatMoney(value);
+
+
+    /*
+     * Newest first.
+     */
+
+    const entries =
+        financeState
+            .incomeHistory
+            .map(
+                (
+                    entry,
+                    index
+                ) => ({
+                    ...entry,
+                    originalIndex: index
+                })
+            )
+            .sort(
+                (
+                    a,
+                    b
+                ) =>
+                    String(b.month)
+                        .localeCompare(
+                            String(a.month)
+                        )
+            );
+
+
+    return entries
+        .map(
+            entry => {
+
+                let monthLabel =
+                    entry.month;
+
+
+                if (
+                    entry.month
+                ) {
+
+                    const date =
+                        new Date(
+                            `${entry.month}-01T00:00:00`
+                        );
+
+                    if (
+                        !Number.isNaN(
+                            date.getTime()
+                        )
+                    ) {
+
+                        monthLabel =
+                            date.toLocaleDateString(
+                                "ru-RU",
+                                {
+                                    month:
+                                        "long",
+                                    year:
+                                        "numeric"
+                                }
+                            );
+
+                    }
+
+                }
+
+
+                return `
+
+                    <div class="finance-income-history-row">
+
+                        <div class="finance-income-history-info">
+
+                            <span class="finance-income-history-month">
+                                ${monthLabel}
+                            </span>
+
+                            <strong class="finance-income-history-amount">
+                                ${formatMoney(
+                                    entry.amount
+                                )} ₽
+                            </strong>
+
+                        </div>
+
+                        <button
+                            type="button"
+                            class="finance-delete-income"
+                            data-income-index="${entry.originalIndex}"
+                            aria-label="Удалить доход"
+                        >
+                            ×
+                        </button>
+
+                    </div>
+
+                `;
+
+            }
+        )
+        .join("");
+
 }
-function renderScore(
-    value
-) {
-    if (
-        !Number.isFinite(value)
-    ) {
-        return "—";
-    }
-    return Math.round(value);
-}
+
+
 /* =========================================================
    ACCORDION
    ========================================================= */
-function toggleFinancePanel(
-    panelId
-) {
-    const panel =
-        document.getElementById(
-            panelId
-        );
-    if (!panel) {
-        return;
-    }
-    const isOpen =
-        panel.classList.contains(
-            "finance-panel-open"
-        );
+
+function closeAllFinancePanels() {
+
     document
         .querySelectorAll(
             ".finance-panel"
         )
         .forEach(
-            item => {
-                item.classList.remove(
+            panel => {
+
+                panel.classList.remove(
                     "finance-panel-open"
                 );
+
             }
         );
-    if (!isOpen) {
+
+
+    document
+        .querySelectorAll(
+            ".finance-section-button"
+        )
+        .forEach(
+            button => {
+
+                button.setAttribute(
+                    "aria-expanded",
+                    "false"
+                );
+
+            }
+        );
+
+}
+
+
+function toggleFinancePanel(
+    panelId,
+    button
+) {
+
+    const panel =
+        document.getElementById(
+            panelId
+        );
+
+
+    if (!panel) {
+
+        return;
+
+    }
+
+
+    const wasOpen =
+        panel.classList.contains(
+            "finance-panel-open"
+        );
+
+
+    closeAllFinancePanels();
+
+
+    if (!wasOpen) {
+
         panel.classList.add(
             "finance-panel-open"
         );
+
+        if (button) {
+
+            button.setAttribute(
+                "aria-expanded",
+                "true"
+            );
+
+        }
+
     }
+
 }
+
+
 /* =========================================================
-   SAVE FIELD
+   SAVE SIMPLE FIELD
    ========================================================= */
-function saveFinanceField(
+
+function saveSimpleFinanceField(
     field,
-    input
+    inputId
 ) {
-    const value =
-        parseMoney(
+
+    const input =
+        document.getElementById(
+            inputId
+        );
+
+
+    if (!input) {
+
+        return;
+
+    }
+
+
+    financeState[field] =
+        toNumber(
             input.value
         );
-    financeState[field] =
-        value;
+
+
     saveFinanceState();
+
     renderFinance();
+
 }
+
+
+/* =========================================================
+   SAVE OBLIGATIONS
+   ========================================================= */
+
+function saveFinancialObligations() {
+
+    const totalInput =
+        document.getElementById(
+            "finance-total-liabilities"
+        );
+
+    const monthlyInput =
+        document.getElementById(
+            "finance-monthly-debt-payments"
+        );
+
+
+    financeState.totalLiabilities =
+        totalInput
+            ? toNumber(
+                totalInput.value
+            )
+            : 0;
+
+
+    financeState.monthlyDebtPayments =
+        monthlyInput
+            ? toNumber(
+                monthlyInput.value
+            )
+            : 0;
+
+
+    saveFinanceState();
+
+    renderFinance();
+
+}
+
+
 /* =========================================================
    ADD INCOME
    ========================================================= */
-function addIncomeEntry() {
-    const input =
-        document.getElementById(
-            "finance-income-input"
-        );
+
+function addIncome() {
+
     const monthInput =
         document.getElementById(
             "finance-income-month"
         );
-    if (!input) {
-        return;
-    }
-    const amount =
-        parseMoney(
-            input.value
+
+    const amountInput =
+        document.getElementById(
+            "finance-income-amount"
         );
+
+
     if (
+        !monthInput ||
+        !amountInput
+    ) {
+
+        return;
+
+    }
+
+
+    const month =
+        monthInput.value;
+
+    const amount =
+        toNumber(
+            amountInput.value
+        );
+
+
+    if (
+        !month ||
         amount <= 0
     ) {
+
         return;
+
     }
-    const month =
-        monthInput &&
-        monthInput.value
-            ? monthInput.value
-            : new Date()
-                .toISOString()
-                .slice(0, 7);
-    financeState
-        .incomeHistory
-        .push({
-            month,
-            amount
-        });
+
+
     /*
-     * Current income is automatically updated
-     * with the latest entered income.
+     * If this month already exists,
+     * update it instead of creating
+     * duplicate monthly entries.
      */
-    financeState.currentIncome =
-        amount;
+
+    const existingIndex =
+        financeState
+            .incomeHistory
+            .findIndex(
+                entry =>
+                    entry.month === month
+            );
+
+
+    if (
+        existingIndex !== -1
+    ) {
+
+        financeState
+            .incomeHistory[
+                existingIndex
+            ]
+            .amount = amount;
+
+    } else {
+
+        financeState
+            .incomeHistory
+            .push({
+
+                month,
+
+                amount
+
+            });
+
+    }
+
+
+    /*
+     * Current income is always
+     * the latest chronological
+     * income entry.
+     */
+
+    updateCurrentIncomeFromHistory();
+
+
     saveFinanceState();
+
     renderFinance();
+
 }
+
+
+/* =========================================================
+   UPDATE CURRENT INCOME
+   ========================================================= */
+
+function updateCurrentIncomeFromHistory() {
+
+    if (
+        !financeState
+            .incomeHistory
+            .length
+    ) {
+
+        financeState.currentIncome = 0;
+
+        return;
+
+    }
+
+
+    const sorted =
+        [...financeState.incomeHistory]
+            .sort(
+                (
+                    a,
+                    b
+                ) =>
+                    String(a.month)
+                        .localeCompare(
+                            String(b.month)
+                        )
+            );
+
+
+    const latest =
+        sorted[
+            sorted.length - 1
+        ];
+
+
+    financeState.currentIncome =
+        toNumber(
+            latest.amount
+        );
+
+}
+
+
 /* =========================================================
    DELETE INCOME
    ========================================================= */
-function deleteIncomeEntry(
+
+function deleteIncome(
     index
 ) {
+
     if (
         index < 0 ||
         index >=
@@ -890,622 +1577,921 @@ function deleteIncomeEntry(
             .incomeHistory
             .length
     ) {
+
         return;
+
     }
+
+
     financeState
         .incomeHistory
         .splice(
             index,
             1
         );
-    /*
-     * Latest remaining income
-     * becomes current income.
-     */
-    if (
-        financeState
-            .incomeHistory
-            .length
-    ) {
-        const latest =
-            financeState
-                .incomeHistory[
-                    financeState
-                        .incomeHistory
-                        .length - 1
-                ];
-        financeState.currentIncome =
-            parseMoney(
-                latest.amount
-            );
-    } else {
-        financeState.currentIncome =
-            0;
-    }
+
+
+    updateCurrentIncomeFromHistory();
+
     saveFinanceState();
+
     renderFinance();
+
 }
+
+
 /* =========================================================
-   RENDER INCOME HISTORY
+   RENDER FINANCE
    ========================================================= */
-function renderIncomeHistory() {
-    if (
-        !financeState
-            .incomeHistory
-            .length
-    ) {
-        return `
-            <div class="finance-empty">
-                История доходов пока пуста.
-            </div>
-        `;
-    }
-    return financeState
-        .incomeHistory
-        .map(
-            (entry, index) => {
-                const date =
-                    entry.month
-                        ? new Date(
-                            `${entry.month}-01`
-                        )
-                        .toLocaleDateString(
-                            "ru-RU",
-                            {
-                                month:
-                                    "long",
-                                year:
-                                    "numeric"
-                            }
-                        )
-                        : "Месяц";
-                return `
-                    <div class="finance-income-row">
-                        <div>
-                            <div class="finance-income-month">
-                                ${date}
-                            </div>
-                            <div class="finance-income-amount">
-                                ${formatMoney(entry.amount)} ₽
-                            </div>
-                        </div>
-                        <button
-                            class="finance-delete-button"
-                            data-delete-income="${index}"
-                            type="button"
-                        >
-                            ×
-                        </button>
-                    </div>
-                `;
-            }
-        )
-        .join("");
-}
-/* =========================================================
-   MAIN RENDER
-   ========================================================= */
+
 function renderFinance() {
+
     const container =
         document.getElementById(
             "finance-container"
         );
+
+
     if (!container) {
-        console.error(
-            "LIFE GAME: Finance container не найден."
-        );
+
         return;
+
     }
-    const statistics =
-        getIncomeStatistics();
+
+
     const stability =
         calculateFinancialStability();
+
+
+    const statistics =
+        getIncomeStatistics();
+
+
     const status =
-        stability.score !== null
-            ? getFinancialStabilityStatus(
-                stability.score
-            )
-            : {
-                label:
-                    "Недостаточно данных"
-            };
+        getFinancialStabilityStatus(
+            stability.score
+        );
+
+
     container.innerHTML = `
+
         <div class="finance-module">
+
+
+            <!-- =========================================
+                 HEADER
+                 ========================================= -->
+
             <div class="finance-header">
+
                 <div class="finance-title">
                     Финансы
                 </div>
+
                 <div class="finance-subtitle">
                     Financial Overview
                 </div>
+
             </div>
+
+
             <!-- =========================================
                  1. LIQUID ASSETS
                  ========================================= -->
-            <div class="finance-section">
+
+            <section class="finance-section">
+
                 <button
-                    class="finance-section-button"
-                    data-panel="finance-liquid-panel"
                     type="button"
+                    class="finance-section-button"
+                    data-finance-panel="finance-liquid-panel"
+                    aria-expanded="false"
                 >
-                    <span>
+
+                    <span class="finance-section-name">
                         1. Ликвидные средства
                     </span>
+
                     <span class="finance-section-value">
                         ${formatMoney(
                             financeState.liquidAssets
                         )} ₽
                     </span>
+
                 </button>
+
+
                 <div
                     id="finance-liquid-panel"
                     class="finance-panel"
                 >
+
                     <div class="finance-panel-content">
-                        <div class="finance-description">
-                            Деньги, которыми вы можете
-                            воспользоваться сейчас.
+
+                        <div class="finance-panel-description">
+
+                            Средства, которыми вы можете
+                            воспользоваться непосредственно сейчас.
+
                         </div>
+
+
+                        <label
+                            class="finance-input-label"
+                            for="finance-liquid-input"
+                        >
+                            Сумма
+                        </label>
+
+
                         <input
                             id="finance-liquid-input"
                             class="finance-input"
                             type="number"
                             min="0"
                             step="100"
-                            value="${financeState.liquidAssets || ""}"
-                            placeholder="Введите сумму"
+                            inputmode="decimal"
+                            value="${
+                                financeState.liquidAssets || ""
+                            }"
+                            placeholder="0"
                         />
+
+
                         <button
+                            type="button"
                             class="finance-save-button"
                             data-save-field="liquidAssets"
                             data-input-id="finance-liquid-input"
-                            type="button"
                         >
                             Сохранить
                         </button>
+
                     </div>
+
                 </div>
-            </div>
+
+            </section>
+
+
             <!-- =========================================
                  2. ESSENTIAL EXPENSES
                  ========================================= -->
-            <div class="finance-section">
+
+            <section class="finance-section">
+
                 <button
-                    class="finance-section-button"
-                    data-panel="finance-expenses-panel"
                     type="button"
+                    class="finance-section-button"
+                    data-finance-panel="finance-expenses-panel"
+                    aria-expanded="false"
                 >
-                    <span>
+
+                    <span class="finance-section-name">
                         2. Обязательные расходы
                     </span>
+
                     <span class="finance-section-value">
                         ${formatMoney(
                             financeState.essentialExpenses
                         )} ₽ / мес.
                     </span>
+
                 </button>
+
+
                 <div
                     id="finance-expenses-panel"
                     class="finance-panel"
                 >
+
                     <div class="finance-panel-content">
-                        <div class="finance-description">
-                            Минимальная сумма,
-                            необходимая для поддержания
+
+                        <div class="finance-panel-description">
+
+                            Минимальные ежемесячные расходы,
+                            необходимые для поддержания
                             текущего уровня жизни.
+
                         </div>
+
+
+                        <label
+                            class="finance-input-label"
+                            for="finance-expenses-input"
+                        >
+                            Сумма в месяц
+                        </label>
+
+
                         <input
                             id="finance-expenses-input"
                             class="finance-input"
                             type="number"
                             min="0"
                             step="100"
-                            value="${financeState.essentialExpenses || ""}"
-                            placeholder="Введите сумму"
+                            inputmode="decimal"
+                            value="${
+                                financeState.essentialExpenses || ""
+                            }"
+                            placeholder="0"
                         />
+
+
                         <button
+                            type="button"
                             class="finance-save-button"
                             data-save-field="essentialExpenses"
                             data-input-id="finance-expenses-input"
-                            type="button"
                         >
                             Сохранить
                         </button>
+
                     </div>
+
                 </div>
-            </div>
+
+            </section>
+
+
             <!-- =========================================
                  3. INCOME
                  ========================================= -->
-            <div class="finance-section">
+
+            <section class="finance-section">
+
                 <button
-                    class="finance-section-button"
-                    data-panel="finance-income-panel"
                     type="button"
+                    class="finance-section-button"
+                    data-finance-panel="finance-income-panel"
+                    aria-expanded="false"
                 >
-                    <span>
+
+                    <span class="finance-section-name">
                         3. Доход
                     </span>
+
                     <span class="finance-section-value">
                         ${formatMoney(
                             financeState.currentIncome
                         )} ₽
                     </span>
+
                 </button>
+
+
                 <div
                     id="finance-income-panel"
                     class="finance-panel"
                 >
+
                     <div class="finance-panel-content">
-                        <div class="finance-description">
-                            Добавьте доход за месяц.
-                            Он автоматически попадёт
-                            в статистику доходов.
+
+                        <div class="finance-panel-description">
+
+                            Добавьте фактический доход
+                            за соответствующий месяц.
+                            История сохраняется автоматически.
+
                         </div>
+
+
+                        <label
+                            class="finance-input-label"
+                            for="finance-income-month"
+                        >
+                            Месяц
+                        </label>
+
+
                         <input
                             id="finance-income-month"
                             class="finance-input"
                             type="month"
-                            value="${new Date()
-                                .toISOString()
-                                .slice(0, 7)}"
+                            value="${
+                                new Date()
+                                    .toISOString()
+                                    .slice(0, 7)
+                            }"
                         />
+
+
+                        <label
+                            class="finance-input-label"
+                            for="finance-income-amount"
+                        >
+                            Доход
+                        </label>
+
+
                         <input
-                            id="finance-income-input"
+                            id="finance-income-amount"
                             class="finance-input"
                             type="number"
                             min="0"
                             step="100"
-                            placeholder="Введите доход"
+                            inputmode="decimal"
+                            placeholder="0"
                         />
+
+
                         <button
+                            type="button"
                             class="finance-save-button"
                             id="finance-add-income"
-                            type="button"
                         >
-                            Добавить доход
+                            Сохранить доход
                         </button>
+
                     </div>
+
                 </div>
-            </div>
+
+            </section>
+
+
             <!-- =========================================
                  4. FINANCIAL OBLIGATIONS
                  ========================================= -->
-            <div class="finance-section">
+
+            <section class="finance-section">
+
                 <button
-                    class="finance-section-button"
-                    data-panel="finance-obligations-panel"
                     type="button"
+                    class="finance-section-button"
+                    data-finance-panel="finance-obligations-panel"
+                    aria-expanded="false"
                 >
-                    <span>
+
+                    <span class="finance-section-name">
                         4. Финансовые обязательства
                     </span>
+
                     <span class="finance-section-value">
                         ${formatMoney(
-                            financeState.financialObligations
-                        )} ₽ / мес.
+                            financeState.totalLiabilities
+                        )} ₽
                     </span>
+
                 </button>
+
+
                 <div
                     id="finance-obligations-panel"
                     class="finance-panel"
                 >
+
                     <div class="finance-panel-content">
-                        <div class="finance-description">
-                            Ежемесячные платежи
-                            по кредитам, займам
-                            и другим финансовым обязательствам.
+
+                        <div class="finance-panel-description">
+
+                            Укажите общий размер обязательств
+                            и сумму обязательных платежей
+                            по ним в месяц.
+
                         </div>
+
+
+                        <label
+                            class="finance-input-label"
+                            for="finance-total-liabilities"
+                        >
+                            Общая сумма обязательств
+                        </label>
+
+
                         <input
-                            id="finance-obligations-input"
+                            id="finance-total-liabilities"
                             class="finance-input"
                             type="number"
                             min="0"
                             step="100"
-                            value="${financeState.financialObligations || ""}"
-                            placeholder="Введите сумму"
+                            inputmode="decimal"
+                            value="${
+                                financeState.totalLiabilities || ""
+                            }"
+                            placeholder="0"
                         />
+
+
+                        <label
+                            class="finance-input-label"
+                            for="finance-monthly-debt-payments"
+                        >
+                            Ежемесячные платежи
+                        </label>
+
+
+                        <input
+                            id="finance-monthly-debt-payments"
+                            class="finance-input"
+                            type="number"
+                            min="0"
+                            step="100"
+                            inputmode="decimal"
+                            value="${
+                                financeState.monthlyDebtPayments || ""
+                            }"
+                            placeholder="0"
+                        />
+
+
                         <button
-                            class="finance-save-button"
-                            data-save-field="financialObligations"
-                            data-input-id="finance-obligations-input"
                             type="button"
+                            class="finance-save-button"
+                            id="finance-save-obligations"
                         >
                             Сохранить
                         </button>
+
                     </div>
+
                 </div>
-            </div>
+
+            </section>
+
+
             <!-- =========================================
                  5. INCOME STATISTICS
                  ========================================= -->
-            <div class="finance-section">
+
+            <section class="finance-section">
+
                 <button
-                    class="finance-section-button"
-                    data-panel="finance-statistics-panel"
                     type="button"
+                    class="finance-section-button"
+                    data-finance-panel="finance-statistics-panel"
+                    aria-expanded="false"
                 >
-                    <span>
+
+                    <span class="finance-section-name">
                         5. Статистика доходов
                     </span>
+
                     <span class="finance-section-value">
                         ${statistics.months} мес.
                     </span>
+
                 </button>
+
+
                 <div
                     id="finance-statistics-panel"
                     class="finance-panel"
                 >
+
                     <div class="finance-panel-content">
-                        <div class="finance-stat-grid">
+
+
+                        <div class="finance-statistics-grid">
+
+
                             <div class="finance-stat-card">
-                                <span>
-                                    Всего
-                                </span>
-                                <strong>
-                                    ${formatMoney(
-                                        statistics.total
-                                    )} ₽
-                                </strong>
-                            </div>
-                            <div class="finance-stat-card">
+
                                 <span>
                                     Средний доход
                                 </span>
+
                                 <strong>
                                     ${formatMoney(
                                         statistics.average
                                     )} ₽
                                 </strong>
+
                             </div>
+
+
                             <div class="finance-stat-card">
+
                                 <span>
-                                    Минимум
+                                    Минимальный
                                 </span>
+
                                 <strong>
                                     ${formatMoney(
                                         statistics.minimum
                                     )} ₽
                                 </strong>
+
                             </div>
+
+
                             <div class="finance-stat-card">
+
                                 <span>
-                                    Максимум
+                                    Максимальный
                                 </span>
+
                                 <strong>
                                     ${formatMoney(
                                         statistics.maximum
                                     )} ₽
                                 </strong>
+
                             </div>
+
+
+                            <div class="finance-stat-card">
+
+                                <span>
+                                    За период
+                                </span>
+
+                                <strong>
+                                    ${formatMoney(
+                                        statistics.total
+                                    )} ₽
+                                </strong>
+
+                            </div>
+
+
                         </div>
-                        <div class="finance-history">
-                            <div class="finance-history-title">
-                                История
-                            </div>
+
+
+                        <div class="finance-history-title">
+                            История доходов
+                        </div>
+
+
+                        <div class="finance-income-history">
+
                             ${renderIncomeHistory()}
+
                         </div>
+
+
                     </div>
+
                 </div>
-            </div>
+
+            </section>
+
+
             <!-- =========================================
                  6. FINANCIAL STABILITY
                  ========================================= -->
-            <div class="finance-stability">
+
+            <section class="finance-stability">
+
+
                 <div class="finance-stability-header">
+
+
                     <div>
+
                         <div class="finance-stability-title">
                             6. Финансовая стабильность
                         </div>
+
                         <div class="finance-stability-subtitle">
                             Financial Stability Score
                         </div>
+
                     </div>
+
+
                     <div class="finance-stability-score">
+
                         ${
                             stability.score !== null
                                 ? stability.score
                                 : "—"
                         }
+
                         <span>/100</span>
+
                     </div>
+
+
                 </div>
+
+
                 <div class="finance-stability-status">
-                    ${
-                        status.label
-                    }
+
+                    ${status}
+
                 </div>
+
+
                 <div class="finance-stability-components">
+
+
                     <div class="finance-stability-row">
+
                         <span>
                             Ликвидность
                         </span>
+
                         <strong>
-                            ${renderScore(
+                            ${formatScore(
                                 stability.components.liquidity
                             )}
                         </strong>
+
                     </div>
+
+
                     <div class="finance-stability-row">
+
                         <span>
                             Денежный поток
                         </span>
+
                         <strong>
-                            ${renderScore(
+                            ${formatScore(
                                 stability.components.cashFlow
                             )}
                         </strong>
+
                     </div>
+
+
                     <div class="finance-stability-row">
+
                         <span>
                             Долговая нагрузка
                         </span>
+
                         <strong>
-                            ${renderScore(
+                            ${formatScore(
                                 stability.components.debt
                             )}
                         </strong>
+
                     </div>
+
+
                     <div class="finance-stability-row">
+
                         <span>
                             Стабильность дохода
                         </span>
+
                         <strong>
-                            ${renderScore(
-                                stability.components.incomeStability
+                            ${formatScore(
+                                stability.components
+                                    .incomeStability
                             )}
                         </strong>
+
                     </div>
+
+
                     <div class="finance-stability-row">
+
                         <span>
                             Чистый капитал
                         </span>
+
                         <strong>
-                            ${renderScore(
-                                stability.components.netWorth
+                            ${formatScore(
+                                stability.components
+                                    .netWorth
                             )}
                         </strong>
+
                     </div>
+
+
                 </div>
-                <div class="finance-stability-info">
+
+
+                <div class="finance-stability-weights">
+
                     <div>
-                        Ликвидность — 30%
+                        Ликвидность
+                        <span>30%</span>
                     </div>
+
                     <div>
-                        Денежный поток — 25%
+                        Денежный поток
+                        <span>25%</span>
                     </div>
+
                     <div>
-                        Долговая нагрузка — 20%
+                        Долговая нагрузка
+                        <span>20%</span>
                     </div>
+
                     <div>
-                        Стабильность дохода — 15%
+                        Стабильность дохода
+                        <span>15%</span>
                     </div>
+
                     <div>
-                        Чистый капитал — 10%
+                        Чистый капитал
+                        <span>10%</span>
                     </div>
+
                 </div>
-            </div>
+
+
+                ${
+                    stability.score === null
+                        ? `
+                            <div class="finance-stability-empty">
+
+                                Добавьте финансовые данные,
+                                чтобы получить оценку
+                                финансовой устойчивости.
+
+                            </div>
+                        `
+                        : ""
+                }
+
+
+            </section>
+
+
         </div>
+
     `;
+
+
     bindFinanceEvents();
+
 }
+
+
 /* =========================================================
    EVENTS
    ========================================================= */
+
 function bindFinanceEvents() {
+
+
     /*
-     * Accordion buttons
+     * Accordion
      */
+
     document
         .querySelectorAll(
-            ".finance-section-button"
+            "[data-finance-panel]"
         )
         .forEach(
             button => {
+
                 button.addEventListener(
                     "click",
                     () => {
+
                         toggleFinancePanel(
-                            button.dataset.panel
+                            button.dataset
+                                .financePanel,
+                            button
                         );
+
                     }
                 );
+
             }
         );
+
+
     /*
-     * Save buttons
+     * Simple fields
      */
+
     document
         .querySelectorAll(
-            ".finance-save-button"
+            "[data-save-field]"
         )
         .forEach(
             button => {
+
                 button.addEventListener(
                     "click",
                     () => {
-                        const field =
+
+                        saveSimpleFinanceField(
                             button.dataset
-                                .saveField;
-                        const input =
-                            document.getElementById(
-                                button.dataset
-                                    .inputId
-                            );
-                        if (
-                            !field ||
-                            !input
-                        ) {
-                            return;
-                        }
-                        saveFinanceField(
-                            field,
-                            input
+                                .saveField,
+                            button.dataset
+                                .inputId
                         );
+
                     }
                 );
+
             }
         );
+
+
     /*
-     * Add income
+     * Obligations
      */
-    const addIncomeButton =
+
+    const obligationsButton =
+        document.getElementById(
+            "finance-save-obligations"
+        );
+
+
+    if (
+        obligationsButton
+    ) {
+
+        obligationsButton.addEventListener(
+            "click",
+            saveFinancialObligations
+        );
+
+    }
+
+
+    /*
+     * Income
+     */
+
+    const incomeButton =
         document.getElementById(
             "finance-add-income"
         );
-    if (addIncomeButton) {
-        addIncomeButton.addEventListener(
+
+
+    if (
+        incomeButton
+    ) {
+
+        incomeButton.addEventListener(
             "click",
-            addIncomeEntry
+            addIncome
         );
+
     }
+
+
     /*
-     * Delete income entries
+     * Delete income
      */
+
     document
         .querySelectorAll(
-            "[data-delete-income]"
+            "[data-income-index]"
         )
         .forEach(
             button => {
+
                 button.addEventListener(
                     "click",
                     () => {
-                        deleteIncomeEntry(
+
+                        deleteIncome(
                             Number(
                                 button.dataset
-                                    .deleteIncome
+                                    .incomeIndex
                             )
                         );
+
                     }
                 );
+
             }
         );
+
 }
+
+
 /* =========================================================
    INITIALIZATION
    ========================================================= */
+
 function initFinance() {
+
     const container =
         document.getElementById(
             "finance-container"
         );
+
+
     if (!container) {
+
         console.error(
-            "LIFE GAME: Finance container не найден."
+            "Finance: #finance-container not found"
         );
+
         return;
+
     }
+
+
     renderFinance();
-    console.log(
-        "LIFE GAME: Finance module работает."
-    );
+
 }
+
+
 /* =========================================================
    PUBLIC API
    ========================================================= */
+
 export {
+
     initFinance,
+
     calculateFinancialStability,
+
     getIncomeStatistics
+
 };
