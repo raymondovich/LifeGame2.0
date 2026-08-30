@@ -17,13 +17,17 @@ function currentMonthKey() {
     ).padStart(2, "0")}`;
 }
 function currentMonthLabel() {
+    const now = new Date();
     return new Intl.DateTimeFormat(
         "en-US",
         {
             month: "long",
             year: "numeric"
         }
-    ).format(new Date()).toUpperCase();
+    ).format(now).toUpperCase();
+}
+function currentDay() {
+    return new Date().getDate();
 }
 function money(value) {
     const number =
@@ -106,6 +110,10 @@ function getFinanceData() {
     }
     const monthKey =
         currentMonthKey();
+    /*
+     * Новый месяц автоматически получает
+     * чистый набор месячных данных.
+     */
     if (
         !stored.months[monthKey]
     ) {
@@ -150,18 +158,36 @@ function expensesTotal(month) {
         0
     );
 }
+/*
+ * Выполнение месячной цели.
+ *
+ * Например:
+ * Доход = 100 000 ₽
+ * Цель = 150 000 ₽
+ * Выполнение = 66,7%
+ *
+ * В интерфейсе округляется до целого.
+ */
 function goalProgress(month) {
     return percentage(
         month.income,
         month.incomeGoal
     );
 }
+/*
+ * Доля обязательных расходов
+ * от фактически заработанного дохода.
+ */
 function expensePercent(month) {
     return percentage(
         expensesTotal(month),
         month.income
     );
 }
+/*
+ * Доля финансового резерва
+ * от фактически заработанного дохода.
+ */
 function reservePercent(month) {
     return percentage(
         month.reserve,
@@ -237,9 +263,25 @@ function injectStyles() {
             font-weight:850;
             letter-spacing:-.07em;
         }
+        /*
+         * Current day + month.
+         */
+        .lg-finance-date {
+            display:flex;
+            align-items:flex-end;
+            gap:10px;
+            margin-top:16px;
+        }
+        .lg-finance-day {
+            font-size:24px;
+            line-height:.9;
+            font-weight:850;
+            letter-spacing:-.055em;
+            color:
+                var(--f-white);
+        }
         .lg-finance-month {
             display:inline-flex;
-            margin-top:14px;
             padding:
                 7px
                 10px;
@@ -312,6 +354,46 @@ function injectStyles() {
             font-size:8px;
             font-weight:800;
             letter-spacing:.12em;
+        }
+        /* ===============================================
+           INCOME
+           =============================================== */
+        .lg-finance-big-number {
+            margin-top:25px;
+            font-size:
+                clamp(
+                    38px,
+                    11vw,
+                    58px
+                );
+            line-height:.9;
+            font-weight:850;
+            letter-spacing:-.07em;
+        }
+        .lg-finance-income-base {
+            display:flex;
+            align-items:center;
+            gap:8px;
+            margin-top:10px;
+            color:
+                var(--f-muted);
+            font-size:8px;
+            font-weight:750;
+            letter-spacing:.1em;
+        }
+        .lg-finance-income-base-percent {
+            display:inline-flex;
+            padding:
+                4px
+                7px;
+            border:
+                1px solid
+                var(--f-border);
+            border-radius:999px;
+            color:
+                var(--f-soft);
+            font-size:7px;
+            font-weight:800;
         }
         /* ===============================================
            ACCORDION
@@ -432,22 +514,7 @@ function injectStyles() {
                 var(--f-border);
         }
         /* ===============================================
-           BIG NUMBER
-           =============================================== */
-        .lg-finance-big-number {
-            margin-top:25px;
-            font-size:
-                clamp(
-                    38px,
-                    11vw,
-                    58px
-                );
-            line-height:.9;
-            font-weight:850;
-            letter-spacing:-.07em;
-        }
-        /* ===============================================
-           GOAL
+           META
            =============================================== */
         .lg-finance-goal-row {
             display:flex;
@@ -470,6 +537,40 @@ function injectStyles() {
                 var(--f-soft);
             font-size:15px;
             font-weight:750;
+        }
+        /* ===============================================
+           PERCENTAGE DISPLAY
+           =============================================== */
+        .lg-finance-ratio {
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:15px;
+            margin-top:18px;
+            padding:
+                11px
+                12px;
+            border:
+                1px solid
+                rgba(255,255,255,.055);
+            border-radius:12px;
+            background:
+                rgba(255,255,255,.018);
+        }
+        .lg-finance-ratio-label {
+            color:
+                var(--f-muted);
+            font-size:7px;
+            font-weight:800;
+            letter-spacing:.12em;
+            text-transform:uppercase;
+        }
+        .lg-finance-ratio-value {
+            color:
+                var(--f-white);
+            font-size:14px;
+            font-weight:850;
+            letter-spacing:-.03em;
         }
         /* ===============================================
            PROGRESS
@@ -569,7 +670,7 @@ function injectStyles() {
                 var(--f-border);
         }
         /*
-         * Swipe container
+         * Swipe container.
          */
         .lg-finance-expense-swipe {
             position:relative;
@@ -582,8 +683,7 @@ function injectStyles() {
             -webkit-user-select:none;
         }
         /*
-         * Delete action behind the row.
-         * Similar visual principle to iOS.
+         * iOS-style delete area.
          */
         .lg-finance-expense-delete-action {
             position:absolute;
@@ -604,7 +704,7 @@ function injectStyles() {
             cursor:pointer;
         }
         /*
-         * Actual sliding row
+         * Actual row.
          */
         .lg-finance-expense-row {
             position:relative;
@@ -628,8 +728,6 @@ function injectStyles() {
                 );
             will-change:
                 transform;
-            cursor:
-                default;
         }
         .lg-finance-expense-row.swiped {
             transform:
@@ -654,17 +752,14 @@ function injectStyles() {
             font-weight:750;
             flex-shrink:0;
         }
-        /*
-         * No delete button on the normal row.
-         */
         .lg-finance-expense-actions {
             display:flex;
             align-items:center;
             flex-shrink:0;
         }
-        /*
-         * Add expense
-         */
+        /* ===============================================
+           ADD EXPENSE
+           =============================================== */
         .lg-finance-add-expense {
             width:100%;
             height:43px;
@@ -1395,10 +1490,19 @@ function renderFinance(
         goalProgress(
             month
         );
+    const expensePercentage =
+        expensePercent(
+            month
+        );
     const reservePercentage =
         reservePercent(
             month
         );
+    /*
+     * Goal progress is limited visually
+     * to 100%, but the text keeps the
+     * actual percentage.
+     */
     const visualGoal =
         Math.min(
             100,
@@ -1452,6 +1556,24 @@ function renderFinance(
             </button>
         </div>
         <div
+            class="lg-finance-ratio"
+        >
+            <div
+                class="
+                    lg-finance-ratio-label
+                "
+            >
+                ACTUAL INCOME / GOAL
+            </div>
+            <div
+                class="
+                    lg-finance-ratio-value
+                "
+            >
+                ${goalPercent}%
+            </div>
+        </div>
+        <div
             class="lg-finance-progress"
         >
             <div
@@ -1500,6 +1622,28 @@ function renderFinance(
        =============================================== */
     const expenseContent = `
         <div
+            class="lg-finance-ratio"
+            style="
+                margin-top:0;
+                margin-bottom:18px;
+            "
+        >
+            <div
+                class="
+                    lg-finance-ratio-label
+                "
+            >
+                OF ACTUAL INCOME
+            </div>
+            <div
+                class="
+                    lg-finance-ratio-value
+                "
+            >
+                ${expensePercentage}%
+            </div>
+        </div>
+        <div
             class="lg-finance-expense-list"
         >
             ${renderExpenses(
@@ -1535,14 +1679,12 @@ function renderFinance(
                 <div
                     class="lg-finance-meta-label"
                 >
-                    FROM ACTUAL INCOME
+                    SAVED THIS MONTH
                 </div>
                 <div
-                    class="
-                        lg-finance-reserve-percent
-                    "
+                    class="lg-finance-meta-value"
                 >
-                    ${reservePercentage}%
+                    ${money(reserve)}
                 </div>
             </div>
             <button
@@ -1556,6 +1698,24 @@ function renderFinance(
                         : "SET RESERVE"
                 }
             </button>
+        </div>
+        <div
+            class="lg-finance-ratio"
+        >
+            <div
+                class="
+                    lg-finance-ratio-label
+                "
+            >
+                OF ACTUAL INCOME
+            </div>
+            <div
+                class="
+                    lg-finance-ratio-value
+                "
+            >
+                ${reservePercentage}%
+            </div>
         </div>
         <div
             class="lg-finance-progress"
@@ -1589,6 +1749,30 @@ function renderFinance(
        STABILITY
        =============================================== */
     const stabilityContent = `
+        <div
+            class="
+                lg-finance-ratio
+            "
+            style="
+                margin-top:0;
+                margin-bottom:18px;
+            "
+        >
+            <div
+                class="
+                    lg-finance-ratio-label
+                "
+            >
+                OF ACTUAL INCOME
+            </div>
+            <div
+                class="
+                    lg-finance-ratio-value
+                "
+            >
+                —
+            </div>
+        </div>
         <div
             class="
                 lg-finance-stability-content
@@ -1637,9 +1821,18 @@ function renderFinance(
                     Finance
                 </h1>
                 <div
-                    class="lg-finance-month"
+                    class="lg-finance-date"
                 >
-                    ${currentMonthLabel()}
+                    <div
+                        class="lg-finance-day"
+                    >
+                        ${currentDay()}
+                    </div>
+                    <div
+                        class="lg-finance-month"
+                    >
+                        ${currentMonthLabel()}
+                    </div>
                 </div>
             </header>
             <!-- MONTHLY INCOME -->
@@ -1686,6 +1879,22 @@ function renderFinance(
                         "
                     >
                         ${money(income)}
+                    </div>
+                    <div
+                        class="
+                            lg-finance-income-base
+                        "
+                    >
+                        <span>
+                            BASE OF ALL FINANCIAL RATIOS
+                        </span>
+                        <span
+                            class="
+                                lg-finance-income-base-percent
+                            "
+                        >
+                            100%
+                        </span>
                     </div>
                     <button
                         type="button"
@@ -1746,6 +1955,20 @@ function renderFinance(
                 content:
                     stabilityContent
             })}
+            <!-- LIFE MODULE LABEL -->
+            <div
+                style="
+                    margin-top:22px;
+                    margin-bottom:8px;
+                    text-align:center;
+                    color:rgba(255,255,255,.22);
+                    font-size:7px;
+                    font-weight:800;
+                    letter-spacing:.18em;
+                "
+            >
+                LIFE MODULE 1
+            </div>
         </div>
     `;
     bindEvents(
@@ -2078,12 +2301,12 @@ function initExpenseSwipe(
                 }
             );
             /*
-             * If the user taps another
-             * expense row, close this one.
+             * Tapping a row closes other
+             * opened rows.
              */
             row.addEventListener(
                 "click",
-                event => {
+                () => {
                     if (moved) {
                         return;
                     }
