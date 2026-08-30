@@ -2,17 +2,14 @@
    LIFE GAME 2.0
    HEALTH MODULE
    ========================================= */
-/**
- * Инициализация модуля здоровья.
- *
- * На этом этапе модуль только подтверждает,
- * что он корректно подключён к приложению.
- *
- * Вся механика здоровья будет добавлена позже.
- */
+/* =========================================
+   INITIALIZE HEALTH
+   ========================================= */
 function initHealth() {
     const container =
-        document.getElementById("health-container");
+        document.getElementById(
+            "health-container"
+        );
     if (!container) {
         console.error(
             "LIFE GAME: Health container не найден."
