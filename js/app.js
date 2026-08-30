@@ -1,235 +1,445 @@
+/* =========================================
+   LIFE GAME 2.0
+   APPLICATION CORE
+   ========================================= */
+
 
 /* =========================================
-   LIFE GAME — APPLICATION
+   MODULES
    ========================================= */
-/*
-   Главная точка входа приложения.
-   app.js НЕ содержит механику:
-   - финансов;
-   - здоровья;
-   - развития;
-   - расчёта XP;
-   - уровней;
-   - хранения данных.
-   Эти системы находятся в отдельных модулях.
-*/
-/* =========================================
-   MODULE IMPORTS
-   ========================================= */
+
 import { initFinance } from "../modules/finance/finance.js";
 import { initHealth } from "../modules/health/health.js";
 import { initDevelopment } from "../modules/development/development.js";
+
+
 /* =========================================
    APPLICATION STATE
    ========================================= */
+
 const App = {
+
     initialized: false,
-    currentSection: "finance",
+
+    currentSection: "finance"
+
 };
+
+
 /* =========================================
-   DOM ELEMENTS
+   DOM
    ========================================= */
+
 const DOM = {
+
     app: null,
+
     main: null,
-    financeSection: null,
-    healthSection: null,
-    developmentSection: null,
+
     navigation: null,
+
+    sections: {
+
+        finance: null,
+
+        health: null,
+
+        development: null
+
+    }
+
 };
+
+
 /* =========================================
-   CACHE DOM
+   CACHE DOM ELEMENTS
    ========================================= */
+
 function cacheDOM() {
-    DOM.app = document.getElementById("app");
-    DOM.main = document.getElementById("app-main");
-    DOM.financeSection =
-        document.getElementById("finance-section");
-    DOM.healthSection =
-        document.getElementById("health-section");
-    DOM.developmentSection =
-        document.getElementById("development-section");
+
+    DOM.app =
+        document.getElementById("app");
+
+    DOM.main =
+        document.getElementById("app-main");
+
     DOM.navigation =
         document.getElementById("bottom-navigation");
+
+    DOM.sections.finance =
+        document.getElementById("finance-section");
+
+    DOM.sections.health =
+        document.getElementById("health-section");
+
+    DOM.sections.development =
+        document.getElementById("development-section");
+
 }
+
+
 /* =========================================
-   VALIDATE DOM
+   CHECK DOM
    ========================================= */
+
 function validateDOM() {
+
     const requiredElements = [
+
         ["#app", DOM.app],
+
         ["#app-main", DOM.main],
-        ["#finance-section", DOM.financeSection],
-        ["#health-section", DOM.healthSection],
-        ["#development-section", DOM.developmentSection],
+
         ["#bottom-navigation", DOM.navigation],
+
+        ["#finance-section", DOM.sections.finance],
+
+        ["#health-section", DOM.sections.health],
+
+        ["#development-section", DOM.sections.development]
+
     ];
+
+
     const missingElements =
         requiredElements
             .filter(([, element]) => !element)
             .map(([selector]) => selector);
+
+
     if (missingElements.length > 0) {
+
         console.error(
-            "LIFE GAME: Не найдены необходимые элементы:",
+            "LIFE GAME: Не найдены элементы:",
             missingElements
         );
+
         return false;
+
     }
+
+
     return true;
+
 }
+
+
 /* =========================================
-   SET ACTIVE SECTION
+   GET VALID SECTION
    ========================================= */
-function setActiveSection(sectionName) {
-    const sections = {
-        finance: DOM.financeSection,
-        health: DOM.healthSection,
-        development: DOM.developmentSection,
-    };
-    Object.entries(sections).forEach(
+
+function isValidSection(sectionName) {
+
+    return (
+
+        sectionName === "finance" ||
+
+        sectionName === "health" ||
+
+        sectionName === "development"
+
+    );
+
+}
+
+
+/* =========================================
+   SHOW SECTION
+   ========================================= */
+
+function showSection(sectionName) {
+
+    if (!isValidSection(sectionName)) {
+
+        console.warn(
+            "LIFE GAME: Неизвестный раздел:",
+            sectionName
+        );
+
+        return;
+
+    }
+
+
+    Object.entries(DOM.sections).forEach(
         ([name, section]) => {
+
             if (!section) return;
-            const isActive =
+
+
+            const active =
                 name === sectionName;
+
+
             section.classList.toggle(
                 "is-active",
-                isActive
+                active
             );
-            section.hidden = !isActive;
+
+
+            section.hidden = !active;
+
         }
     );
+
+
     App.currentSection = sectionName;
+
+
+    updateNavigation(sectionName);
+
 }
+
+
 /* =========================================
-   SET ACTIVE NAVIGATION BUTTON
+   UPDATE NAVIGATION
    ========================================= */
-function setActiveNavigation(sectionName) {
+
+function updateNavigation(sectionName) {
+
     if (!DOM.navigation) return;
+
+
     const buttons =
         DOM.navigation.querySelectorAll(
             "[data-section]"
         );
+
+
     buttons.forEach(button => {
-        const isActive =
+
+        const active =
             button.dataset.section === sectionName;
+
+
         button.classList.toggle(
             "is-active",
-            isActive
+            active
         );
-        button.setAttribute(
-            "aria-current",
-            isActive ? "page" : "false"
-        );
+
+
+        if (active) {
+
+            button.setAttribute(
+                "aria-current",
+                "page"
+            );
+
+        } else {
+
+            button.removeAttribute(
+                "aria-current"
+            );
+
+        }
+
     });
+
 }
+
+
 /* =========================================
-   NAVIGATION
+   NAVIGATION EVENTS
    ========================================= */
-function setupNavigation() {
+
+function initNavigation() {
+
     if (!DOM.navigation) return;
+
+
     DOM.navigation.addEventListener(
         "click",
         event => {
+
             const button =
                 event.target.closest(
                     "[data-section]"
                 );
+
+
             if (!button) return;
+
+
             const sectionName =
                 button.dataset.section;
-            if (
-                sectionName !== "finance" &&
-                sectionName !== "health" &&
-                sectionName !== "development"
-            ) {
-                console.warn(
-                    "LIFE GAME: Неизвестный раздел:",
-                    sectionName
-                );
-                return;
-            }
-            setActiveSection(sectionName);
-            setActiveNavigation(sectionName);
+
+
+            showSection(sectionName);
+
         }
     );
+
 }
+
+
+/* =========================================
+   INITIALIZE FINANCE
+   ========================================= */
+
+function initializeFinance() {
+
+    try {
+
+        initFinance();
+
+        console.log(
+            "LIFE GAME: Finance initialized."
+        );
+
+    } catch (error) {
+
+        console.error(
+            "LIFE GAME: Finance initialization error:",
+            error
+        );
+
+    }
+
+}
+
+
+/* =========================================
+   INITIALIZE HEALTH
+   ========================================= */
+
+function initializeHealth() {
+
+    try {
+
+        initHealth();
+
+        console.log(
+            "LIFE GAME: Health initialized."
+        );
+
+    } catch (error) {
+
+        console.error(
+            "LIFE GAME: Health initialization error:",
+            error
+        );
+
+    }
+
+}
+
+
+/* =========================================
+   INITIALIZE DEVELOPMENT
+   ========================================= */
+
+function initializeDevelopment() {
+
+    try {
+
+        initDevelopment();
+
+        console.log(
+            "LIFE GAME: Development initialized."
+        );
+
+    } catch (error) {
+
+        console.error(
+            "LIFE GAME: Development initialization error:",
+            error
+        );
+
+    }
+
+}
+
+
 /* =========================================
    INITIALIZE MODULES
    ========================================= */
+
 function initializeModules() {
-    try {
-        initFinance();
-    } catch (error) {
-        console.error(
-            "LIFE GAME: Ошибка запуска Finance:",
-            error
-        );
-    }
-    try {
-        initHealth();
-    } catch (error) {
-        console.error(
-            "LIFE GAME: Ошибка запуска Health:",
-            error
-        );
-    }
-    try {
-        initDevelopment();
-    } catch (error) {
-        console.error(
-            "LIFE GAME: Ошибка запуска Development:",
-            error
-        );
-    }
+
+    initializeFinance();
+
+    initializeHealth();
+
+    initializeDevelopment();
+
 }
+
+
 /* =========================================
    INITIALIZE APPLICATION
    ========================================= */
+
 function initApp() {
+
     if (App.initialized) {
-        console.warn(
-            "LIFE GAME: Приложение уже запущено."
-        );
+
         return;
+
     }
+
+
     cacheDOM();
-    const isValid =
-        validateDOM();
-    if (!isValid) {
+
+
+    if (!validateDOM()) {
+
         return;
+
     }
-    setupNavigation();
+
+
+    initNavigation();
+
+
     initializeModules();
-    setActiveSection(
+
+
+    showSection(
         App.currentSection
     );
-    setActiveNavigation(
-        App.currentSection
-    );
+
+
     App.initialized = true;
+
+
     console.log(
-        "LIFE GAME: Приложение успешно запущено."
+        "LIFE GAME 2.0: Application initialized."
     );
+
 }
+
+
 /* =========================================
-   START APPLICATION
+   START
    ========================================= */
+
 if (
     document.readyState === "loading"
 ) {
+
     document.addEventListener(
         "DOMContentLoaded",
         initApp,
         { once: true }
     );
+
 } else {
+
     initApp();
+
 }
+
+
 /* =========================================
    PUBLIC API
    ========================================= */
+
 export {
+
     App,
+
     initApp,
-    setActiveSection,
+
+    showSection
+
 };
