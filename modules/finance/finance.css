@@ -1,21 +1,54 @@
-/* =========================================================
+/* ============================================================
    LIFE GAME 2.0
-   FINANCE
-   BLACK PREMIUM UI
-   ========================================================= */
-/* =========================================================
-   ROOT
-   ========================================================= */
+   FINANCE — PREMIUM FINANCE UI v2
+   Design direction:
+   Private Financial Intelligence
+   Wealth Management / Premium Terminal
+   IMPORTANT:
+   This file contains ONLY visual styling.
+   No financial logic is handled here.
+   ============================================================ */
+/* ============================================================
+   01. DESIGN TOKENS
+   ============================================================ */
 #finance-container {
+    --finance-bg: #050505;
+    --finance-surface: #0a0a0a;
+    --finance-surface-2: #0d0d0d;
+    --finance-surface-3: #111111;
+    --finance-border:
+        rgba(255, 255, 255, 0.075);
+    --finance-border-soft:
+        rgba(255, 255, 255, 0.045);
+    --finance-border-strong:
+        rgba(255, 255, 255, 0.14);
+    --finance-primary: #f2f2f0;
+    --finance-secondary: #a1a19d;
+    --finance-muted: #676763;
+    --finance-dim: #3f3f3c;
+    --finance-positive: #9fae9c;
+    --finance-attention: #a99f88;
+    --finance-radius-sm: 9px;
+    --finance-radius-md: 13px;
+    --finance-radius-lg: 19px;
+    --finance-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.32);
+    --finance-ease:
+        cubic-bezier(.22, .61, .36, 1);
     width: 100%;
-    min-height: 100%;
 }
+/* ============================================================
+   02. BASE
+   ============================================================ */
 .finance-module {
     width: 100%;
-    max-width: 760px;
+    max-width: 780px;
     margin: 0 auto;
-    padding: 8px 0 40px;
-    color: #f5f5f5;
+    padding:
+        18px
+        0
+        70px;
+    color: var(--finance-primary);
     font-family:
         -apple-system,
         BlinkMacSystemFont,
@@ -25,135 +58,174 @@
         Helvetica,
         Arial,
         sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
 }
-/* =========================================================
-   HEADER
-   ========================================================= */
+/* ============================================================
+   03. TOP HEADER
+   ============================================================ */
 .finance-header {
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
-    margin-bottom: 30px;
+    margin-bottom: 38px;
 }
 .finance-eyebrow {
-    margin: 0 0 7px;
-    color: #666;
-    font-size: 9px;
+    margin:
+        0
+        0
+        10px;
+    color:
+        var(--finance-dim);
+    font-size: 8px;
     font-weight: 700;
-    letter-spacing: 2.2px;
+    letter-spacing: 2.4px;
     line-height: 1;
     text-transform: uppercase;
 }
 .finance-title {
     margin: 0;
-    color: #f4f4f4;
-    font-size: 32px;
-    font-weight: 650;
-    letter-spacing: -1.4px;
-    line-height: 1.05;
+    color:
+        var(--finance-primary);
+    font-size: 35px;
+    font-weight: 600;
+    letter-spacing: -1.7px;
+    line-height: 1;
 }
-/* =========================================================
-   SECTION
-   ========================================================= */
-.finance-section {
-    width: 100%;
-}
+/* ============================================================
+   04. SECTION LABEL
+   ============================================================ */
 .finance-section-label {
-    margin: 0 0 10px 4px;
-    color: #555;
-    font-size: 9px;
+    display: flex;
+    align-items: center;
+    margin:
+        0
+        0
+        11px
+        2px;
+    color:
+        var(--finance-dim);
+    font-size: 8px;
     font-weight: 700;
-    letter-spacing: 1.8px;
+    letter-spacing: 2px;
     text-transform: uppercase;
 }
-/* =========================================================
-   LIST
-   ========================================================= */
+/* ============================================================
+   05. DATA LIST
+   ============================================================ */
 .finance-list {
     display: flex;
     flex-direction: column;
-    gap: 7px;
-}
-/* =========================================================
-   CARD
-   ========================================================= */
-.finance-card {
-    position: relative;
+    gap: 1px;
     overflow: hidden;
     border:
         1px solid
-        rgba(255, 255, 255, 0.075);
-    border-radius: 15px;
+        var(--finance-border-soft);
+    border-radius:
+        var(--finance-radius-md);
     background:
-        linear-gradient(
-            145deg,
-            #111111 0%,
-            #0b0b0b 100%
-        );
-    box-shadow:
-        0 8px 30px
-        rgba(0, 0, 0, 0.20);
+        var(--finance-border-soft);
+}
+/* ============================================================
+   06. DATA CARD
+   ============================================================ */
+.finance-card {
+    position: relative;
+    overflow: hidden;
+    border: 0;
+    border-radius: 0;
+    background:
+        var(--finance-surface);
     transition:
-        border-color 180ms ease,
-        background 180ms ease;
+        background 220ms var(--finance-ease);
+}
+.finance-card:hover {
+    background:
+        var(--finance-surface-2);
 }
 .finance-card.is-open {
-    border-color:
-        rgba(255, 255, 255, 0.14);
     background:
-        linear-gradient(
-            145deg,
-            #121212 0%,
-            #0c0c0c 100%
-        );
+        var(--finance-surface-2);
 }
-/* =========================================================
-   CARD HEADER
-   ========================================================= */
+/* ============================================================
+   07. CARD HEADER
+   ============================================================ */
 .finance-card-header {
+    position: relative;
     width: 100%;
-    min-height: 76px;
+    min-height: 79px;
     display: grid;
     grid-template-columns:
-        38px
+        36px
         minmax(0, 1fr)
         28px;
     align-items: center;
-    gap: 13px;
-    padding: 13px 15px;
+    gap: 15px;
+    padding:
+        13px
+        18px;
     border: 0;
-    outline: 0;
+    outline: none;
     background: transparent;
     color: inherit;
     text-align: left;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
 }
+.finance-card-header::after {
+    content: "";
+    position: absolute;
+    left: 69px;
+    right: 18px;
+    bottom: 0;
+    height: 1px;
+    background:
+        var(--finance-border-soft);
+    transition:
+        opacity 180ms ease;
+}
+.finance-card:last-child
+.finance-card-header::after {
+    opacity: 0;
+}
 .finance-card-header:active {
     background:
-        rgba(255, 255, 255, 0.025);
+        rgba(255, 255, 255, 0.018);
 }
-/* =========================================================
-   INDEX
-   ========================================================= */
+/* ============================================================
+   08. INDEX
+   ============================================================ */
 .finance-card-index {
-    width: 34px;
-    height: 34px;
+    width: 30px;
+    height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
+    color:
+        var(--finance-dim);
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.7px;
     border:
         1px solid
-        rgba(255, 255, 255, 0.08);
-    border-radius: 10px;
-    color: #686868;
-    font-size: 9px;
-    font-weight: 650;
-    letter-spacing: 0.6px;
+        var(--finance-border-soft);
+    border-radius: 8px;
+    background:
+        rgba(255, 255, 255, 0.008);
+    transition:
+        border-color 180ms ease,
+        color 180ms ease;
 }
-/* =========================================================
-   CARD CONTENT
-   ========================================================= */
+.finance-card.is-open
+.finance-card-index {
+    border-color:
+        var(--finance-border-strong);
+    color:
+        var(--finance-secondary);
+}
+/* ============================================================
+   09. CARD MAIN
+   ============================================================ */
 .finance-card-main {
     min-width: 0;
     display: flex;
@@ -162,62 +234,73 @@
 }
 .finance-card-title {
     overflow: hidden;
-    color: #ededed;
-    font-size: 14px;
-    font-weight: 570;
-    letter-spacing: -0.15px;
+    color:
+        #dededb;
+    font-size: 13px;
+    font-weight: 540;
+    letter-spacing: -0.1px;
+    line-height: 1.2;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 .finance-card-value {
     overflow: hidden;
-    color: #666;
-    font-size: 11px;
+    color:
+        var(--finance-muted);
+    font-size: 10px;
     font-weight: 450;
+    letter-spacing: 0;
+    line-height: 1.2;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-/* =========================================================
-   CHEVRON
-   ========================================================= */
+/* ============================================================
+   10. CHEVRON
+   ============================================================ */
 .finance-card-chevron {
     width: 28px;
     height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #4f4f4f;
+    color:
+        #373735;
     transition:
-        transform 220ms cubic-bezier(.4,0,.2,1),
+        transform 280ms var(--finance-ease),
         color 180ms ease;
 }
 .finance-card-chevron svg {
-    width: 17px;
-    height: 17px;
+    width: 14px;
+    height: 14px;
 }
 .finance-card.is-open
 .finance-card-chevron {
-    transform: rotate(90deg);
-    color: #aaa;
+    transform:
+        rotate(90deg);
+    color:
+        #858581;
 }
-/* =========================================================
-   DRAWER
-   ========================================================= */
+/* ============================================================
+   11. DRAWER
+   ============================================================ */
 .finance-drawer {
     display: grid;
     grid-template-rows: 0fr;
     opacity: 0;
     transition:
-        grid-template-rows 300ms
-            cubic-bezier(.4,0,.2,1),
-        opacity 180ms ease;
+        grid-template-rows
+            360ms var(--finance-ease),
+        opacity
+            180ms ease;
 }
 .finance-drawer-inner {
     min-height: 0;
     overflow: hidden;
     padding:
-        0 18px
-        0 66px;
+        0
+        18px
+        0
+        69px;
 }
 .finance-card.is-open
 .finance-drawer {
@@ -226,156 +309,194 @@
 }
 .finance-card.is-open
 .finance-drawer-inner {
-    padding-bottom: 20px;
+    padding-bottom: 23px;
 }
-/* =========================================================
-   DRAWER DESCRIPTION
-   ========================================================= */
+/* ============================================================
+   12. DESCRIPTION
+   ============================================================ */
 .finance-drawer-description {
+    max-width: 470px;
     margin:
-        0 0 20px;
-    color: #6d6d6d;
-    font-size: 11px;
+        0
+        0
+        21px;
+    color:
+        #575753;
+    font-size: 10px;
     font-weight: 400;
-    line-height: 1.55;
+    line-height: 1.65;
 }
 .finance-drawer-description p {
     margin: 0;
 }
-/* =========================================================
-   FORM
-   ========================================================= */
+/* ============================================================
+   13. FIELD
+   ============================================================ */
 .finance-field {
     margin-bottom: 14px;
 }
 .finance-label {
     display: block;
     margin:
-        0 0 7px;
-    color: #737373;
-    font-size: 9px;
-    font-weight: 650;
-    letter-spacing: 1.2px;
+        0
+        0
+        7px;
+    color:
+        #555552;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1.6px;
+    line-height: 1;
     text-transform: uppercase;
 }
-/* =========================================================
-   INPUT
-   ========================================================= */
+/* ============================================================
+   14. INPUT
+   ============================================================ */
 .finance-input-wrap {
     position: relative;
 }
 .finance-input {
     width: 100%;
-    height: 48px;
+    height: 49px;
     padding:
-        0 45px 0 14px;
+        0
+        45px
+        0
+        14px;
     border:
         1px solid
-        rgba(255, 255, 255, 0.085);
-    border-radius: 11px;
+        var(--finance-border);
+    border-radius:
+        var(--finance-radius-sm);
     outline: none;
-    background: #080808;
-    color: #f2f2f2;
+    background:
+        #070707;
+    color:
+        #eeeeeb;
     font-family: inherit;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 500;
+    letter-spacing: -0.1px;
     -webkit-appearance: none;
     transition:
         border-color 180ms ease,
         background 180ms ease,
         box-shadow 180ms ease;
 }
-.finance-input::placeholder {
-    color: #373737;
+.finance-input:hover {
+    border-color:
+        rgba(255, 255, 255, 0.11);
 }
 .finance-input:focus {
     border-color:
-        rgba(255, 255, 255, 0.25);
-    background: #0b0b0b;
+        rgba(255, 255, 255, 0.23);
+    background:
+        #0a0a0a;
     box-shadow:
         0 0 0 3px
         rgba(255, 255, 255, 0.025);
 }
+.finance-input::placeholder {
+    color:
+        #30302e;
+}
 .finance-input-suffix {
     position: absolute;
     top: 50%;
-    right: 14px;
-    transform: translateY(-50%);
-    color: #4f4f4f;
-    font-size: 11px;
-    font-weight: 600;
+    right: 15px;
+    transform:
+        translateY(-50%);
+    color:
+        #454541;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.7px;
     pointer-events: none;
 }
-/* =========================================================
-   MONTH INPUT
-   ========================================================= */
+/* ============================================================
+   15. MONTH
+   ============================================================ */
 input[type="month"] {
     padding-right: 14px;
     color-scheme: dark;
 }
 input[type="month"]::-webkit-calendar-picker-indicator {
-    opacity: 0.45;
+    opacity: 0.3;
     filter: invert(1);
+    cursor: pointer;
 }
-/* =========================================================
-   BUTTON
-   ========================================================= */
+/* ============================================================
+   16. PRIMARY ACTION
+   ============================================================ */
 .finance-primary-button {
+    position: relative;
     width: 100%;
-    height: 46px;
+    height: 45px;
     margin-top: 3px;
     border:
         1px solid
-        rgba(255, 255, 255, 0.11);
-    border-radius: 10px;
+        rgba(255, 255, 255, 0.10);
+    border-radius:
+        var(--finance-radius-sm);
     background:
         linear-gradient(
             180deg,
-            #1b1b1b 0%,
-            #151515 100%
+            #181816 0%,
+            #121210 100%
         );
-    color: #e9e9e9;
+    color:
+        #d8d8d4;
     font-family: inherit;
-    font-size: 11px;
-    font-weight: 650;
-    letter-spacing: 0.15px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
     cursor: pointer;
     transition:
-        background 150ms ease,
-        border-color 150ms ease,
+        background 160ms ease,
+        border-color 160ms ease,
         transform 100ms ease;
 }
 .finance-primary-button:hover {
     border-color:
-        rgba(255, 255, 255, 0.18);
-    background: #202020;
+        rgba(255, 255, 255, 0.17);
+    background:
+        linear-gradient(
+            180deg,
+            #20201e 0%,
+            #171715 100%
+        );
 }
 .finance-primary-button:active {
-    transform: scale(0.985);
-    background: #111;
+    transform:
+        scale(0.988);
 }
-/* =========================================================
-   HISTORY
-   ========================================================= */
+/* ============================================================
+   17. HISTORY
+   ============================================================ */
 .finance-history {
-    margin-top: 24px;
+    margin-top: 26px;
+    border-top:
+        1px solid
+        var(--finance-border-soft);
 }
 .finance-subsection-title {
-    margin-bottom: 4px;
-    color: #4f4f4f;
+    padding-top: 14px;
+    color:
+        #444441;
     font-size: 8px;
     font-weight: 700;
-    letter-spacing: 1.7px;
+    letter-spacing: 1.6px;
     text-transform: uppercase;
 }
 .finance-history-row {
-    min-height: 55px;
+    min-height: 57px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     border-bottom:
         1px solid
-        rgba(255, 255, 255, 0.055);
+        var(--finance-border-soft);
 }
 .finance-history-row:last-child {
     border-bottom: 0;
@@ -383,33 +504,37 @@ input[type="month"]::-webkit-calendar-picker-indicator {
 .finance-history-info {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 5px;
 }
 .finance-history-month {
-    color: #555;
+    color:
+        #4c4c49;
     font-size: 9px;
     font-weight: 500;
     text-transform: capitalize;
 }
 .finance-history-amount {
-    color: #d7d7d7;
+    color:
+        #c9c9c5;
     font-size: 13px;
     font-weight: 560;
+    letter-spacing: -0.2px;
 }
-/* =========================================================
-   DELETE
-   ========================================================= */
+/* ============================================================
+   18. DELETE
+   ============================================================ */
 .finance-icon-button {
-    width: 31px;
-    height: 31px;
+    width: 30px;
+    height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
     border: 0;
     border-radius: 8px;
     background: transparent;
-    color: #484848;
-    font-size: 18px;
+    color:
+        #3d3d3a;
+    font-size: 17px;
     font-weight: 300;
     cursor: pointer;
     transition:
@@ -417,178 +542,232 @@ input[type="month"]::-webkit-calendar-picker-indicator {
         background 150ms ease;
 }
 .finance-icon-button:hover {
+    color:
+        #999995;
     background:
-        rgba(255, 255, 255, 0.04);
-    color: #aaa;
+        rgba(255, 255, 255, 0.035);
 }
-/* =========================================================
-   STATISTICS
-   ========================================================= */
+/* ============================================================
+   19. STATISTICS
+   ============================================================ */
 .finance-stat-grid {
     display: grid;
     grid-template-columns:
         repeat(2, minmax(0, 1fr));
-    gap: 7px;
-}
-.finance-stat-card {
-    min-height: 82px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 13px;
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.055);
-    border-radius: 11px;
-    background: #090909;
-}
-.finance-stat-card span {
-    color: #555;
-    font-size: 8px;
-    font-weight: 650;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-}
-.finance-stat-card strong {
-    color: #d9d9d9;
-    font-size: 14px;
-    font-weight: 570;
-    letter-spacing: -0.2px;
-}
-/* =========================================================
-   STABILITY CARD
-   ========================================================= */
-.finance-stability-card {
-    position: relative;
-    margin-top: 26px;
-    padding: 21px 19px 18px;
+    gap: 1px;
     overflow: hidden;
     border:
         1px solid
-        rgba(255, 255, 255, 0.11);
-    border-radius: 17px;
+        var(--finance-border-soft);
+    border-radius:
+        var(--finance-radius-sm);
+    background:
+        var(--finance-border-soft);
+}
+.finance-stat-card {
+    min-height: 91px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding:
+        14px;
+    background:
+        #090909;
+}
+.finance-stat-card span {
+    color:
+        #4d4d49;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+}
+.finance-stat-card strong {
+    color:
+        #d1d1cd;
+    font-size: 14px;
+    font-weight: 560;
+    letter-spacing: -0.25px;
+}
+/* ============================================================
+   20. FINANCIAL STABILITY
+   ============================================================ */
+.finance-stability-card {
+    position: relative;
+    margin-top: 42px;
+    padding:
+        26px
+        24px
+        22px;
+    overflow: hidden;
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.105);
+    border-radius:
+        var(--finance-radius-lg);
     background:
         radial-gradient(
-            circle at 100% 0%,
-            rgba(255,255,255,0.055),
-            transparent 42%
+            600px 250px at 100% 0%,
+            rgba(255, 255, 255, 0.045),
+            transparent 60%
         ),
         linear-gradient(
             145deg,
-            #111111 0%,
-            #090909 100%
+            #10100f 0%,
+            #080808 72%
         );
     box-shadow:
-        0 15px 45px
-        rgba(0, 0, 0, 0.25);
+        var(--finance-shadow);
 }
+/* subtle premium top edge */
 .finance-stability-card::before {
     content: "";
     position: absolute;
     top: 0;
-    left: 0;
-    right: 0;
+    left: 10%;
+    right: 10%;
     height: 1px;
     background:
         linear-gradient(
             90deg,
             transparent,
-            rgba(255,255,255,0.18),
+            rgba(255,255,255,0.16),
             transparent
         );
 }
-/* =========================================================
-   STABILITY HEADER
-   ========================================================= */
+/* ============================================================
+   21. STABILITY HEADER
+   ============================================================ */
 .finance-stability-header {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 20px;
+    gap: 25px;
+}
+.finance-stability-header
+.finance-eyebrow {
+    margin-bottom: 11px;
+    color:
+        #555551;
 }
 .finance-stability-header h2 {
     margin: 0;
-    color: #ededed;
-    font-size: 18px;
-    font-weight: 620;
-    letter-spacing: -0.55px;
+    color:
+        #e4e4e0;
+    font-size: 19px;
+    font-weight: 560;
+    letter-spacing: -0.65px;
+    line-height: 1.1;
 }
+/* ============================================================
+   22. SCORE
+   ============================================================ */
 .finance-score {
     display: flex;
     align-items: baseline;
     white-space: nowrap;
 }
 .finance-score strong {
-    color: #f1f1f1;
-    font-size: 37px;
-    font-weight: 650;
-    letter-spacing: -2px;
-    line-height: 0.9;
+    color:
+        #f1f1ed;
+    font-size: 48px;
+    font-weight: 560;
+    letter-spacing: -3px;
+    line-height: 0.8;
+    font-variant-numeric:
+        tabular-nums;
 }
 .finance-score span {
-    margin-left: 3px;
-    color: #505050;
-    font-size: 11px;
-    font-weight: 500;
+    margin-left: 5px;
+    color:
+        #4b4b47;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
 }
-/* =========================================================
-   STATUS
-   ========================================================= */
+/* ============================================================
+   23. SCORE STATUS
+   ============================================================ */
 .finance-score-status {
-    margin-top: 22px;
+    margin-top: 28px;
 }
 .finance-score-status strong {
     display: block;
-    color: #bdbdbd;
-    font-size: 12px;
-    font-weight: 600;
+    color:
+        #b8b8b4;
+    font-size: 11px;
+    font-weight: 650;
+    letter-spacing: 0.15px;
 }
 .finance-score-status p {
-    max-width: 450px;
+    max-width: 520px;
     margin:
-        5px 0 0;
-    color: #5e5e5e;
+        7px
+        0
+        0;
+    color:
+        #5d5d59;
     font-size: 10px;
-    line-height: 1.5;
+    font-weight: 400;
+    line-height: 1.6;
 }
-/* =========================================================
-   SCORE BAR
-   ========================================================= */
+/* ============================================================
+   24. SCORE BAR
+   ============================================================ */
 .finance-score-line {
     position: relative;
     width: 100%;
     height: 3px;
-    margin-top: 20px;
+    margin-top: 24px;
     overflow: hidden;
-    border-radius: 99px;
-    background: #1c1c1c;
+    border-radius: 999px;
+    background:
+        #1c1c1a;
+}
+.finance-score-line::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(
+            90deg,
+            rgba(255,255,255,0.025),
+            rgba(255,255,255,0.06)
+        );
 }
 .finance-score-line-fill {
+    position: relative;
     height: 100%;
     border-radius: inherit;
     background:
         linear-gradient(
             90deg,
-            #444,
-            #d7d7d7
+            #51514e,
+            #deded9
         );
+    box-shadow:
+        0 0 14px
+        rgba(255, 255, 255, 0.08);
     transition:
-        width 500ms cubic-bezier(.4,0,.2,1);
+        width 700ms var(--finance-ease);
 }
-/* =========================================================
-   SCORE COMPONENTS
-   ========================================================= */
+/* ============================================================
+   25. SCORE COMPONENTS
+   ============================================================ */
 .finance-score-components {
-    margin-top: 12px;
+    margin-top: 16px;
+    border-top:
+        1px solid
+        var(--finance-border-soft);
 }
 .finance-score-component {
-    min-height: 43px;
+    min-height: 48px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     border-bottom:
         1px solid
-        rgba(255, 255, 255, 0.045);
+        var(--finance-border-soft);
 }
 .finance-score-component:last-child {
     border-bottom: 0;
@@ -596,166 +775,272 @@ input[type="month"]::-webkit-calendar-picker-indicator {
 .finance-score-component > div {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 9px;
 }
 .finance-score-component span {
-    color: #777;
+    color:
+        #777772;
     font-size: 10px;
-    font-weight: 500;
+    font-weight: 480;
 }
 .finance-score-component small {
-    color: #3f3f3f;
-    font-size: 8px;
-    font-weight: 600;
+    color:
+        #41413e;
+    font-size: 7px;
+    font-weight: 700;
+    letter-spacing: 0.7px;
 }
 .finance-score-component strong {
-    min-width: 22px;
-    color: #bdbdbd;
+    min-width: 25px;
+    color:
+        #b9b9b5;
     font-size: 11px;
     font-weight: 600;
     text-align: right;
+    font-variant-numeric:
+        tabular-nums;
 }
-/* =========================================================
-   NOTE
-   ========================================================= */
+/* ============================================================
+   26. INFORMATION NOTE
+   ============================================================ */
 .finance-stability-note {
     display: flex;
     align-items: flex-start;
-    gap: 9px;
-    margin-top: 17px;
-    padding-top: 14px;
+    gap: 10px;
+    margin-top: 18px;
+    padding-top: 15px;
     border-top:
         1px solid
-        rgba(255, 255, 255, 0.055);
+        var(--finance-border-soft);
 }
 .finance-note-mark {
-    width: 16px;
-    height: 16px;
-    flex: 0 0 16px;
+    width: 17px;
+    height: 17px;
+    flex:
+        0 0 17px;
     display: flex;
     align-items: center;
     justify-content: center;
     border:
         1px solid
-        rgba(255, 255, 255, 0.10);
+        rgba(255,255,255,0.09);
     border-radius: 50%;
-    color: #555;
+    color:
+        #51514d;
     font-size: 8px;
     font-weight: 700;
 }
 .finance-stability-note p {
+    max-width: 480px;
     margin: 0;
-    color: #484848;
+    color:
+        #464642;
     font-size: 9px;
-    line-height: 1.45;
+    line-height: 1.55;
 }
-/* =========================================================
-   EMPTY STATE
-   ========================================================= */
+/* ============================================================
+   27. EMPTY STATE
+   ============================================================ */
 .finance-empty {
-    padding: 15px 0;
-    color: #4b4b4b;
-    font-size: 10px;
+    padding:
+        17px
+        0;
+    color:
+        #454542;
+    font-size: 9px;
     line-height: 1.5;
 }
-/* =========================================================
-   MOBILE
-   ========================================================= */
+/* ============================================================
+   28. PREMIUM MICRO-INTERACTIONS
+   ============================================================ */
+.finance-card,
+.finance-stability-card,
+.finance-stat-card,
+.finance-input,
+.finance-primary-button {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+}
+/* ============================================================
+   29. MOBILE
+   ============================================================ */
 @media (max-width: 600px) {
     .finance-module {
         padding:
-            4px
+            9px
             0
-            32px;
+            55px;
     }
     .finance-header {
-        margin-bottom: 24px;
+        margin-bottom: 30px;
     }
     .finance-title {
-        font-size: 29px;
+        font-size: 31px;
+        letter-spacing: -1.5px;
+    }
+    .finance-list {
+        border-radius:
+            12px;
     }
     .finance-card-header {
-        min-height: 70px;
+        min-height: 74px;
         grid-template-columns:
-            34px
+            32px
             minmax(0, 1fr)
-            26px;
-        gap: 11px;
+            25px;
+        gap: 13px;
         padding:
-            11px 13px;
+            11px
+            14px;
+    }
+    .finance-card-header::after {
+        left: 59px;
+        right: 14px;
     }
     .finance-card-index {
-        width: 31px;
-        height: 31px;
+        width: 29px;
+        height: 29px;
     }
     .finance-card-title {
-        font-size: 13px;
+        font-size: 12px;
     }
     .finance-card-value {
-        font-size: 10px;
+        font-size: 9px;
     }
     .finance-drawer-inner {
         padding:
             0
             14px
             0
-            57px;
+            59px;
     }
     .finance-card.is-open
     .finance-drawer-inner {
-        padding-bottom: 17px;
+        padding-bottom: 20px;
     }
     .finance-stability-card {
-        margin-top: 20px;
+        margin-top: 30px;
         padding:
-            18px
-            15px
+            21px
+            17px
+            18px;
+        border-radius:
             16px;
+    }
+    .finance-stability-header {
+        gap: 14px;
     }
     .finance-stability-header h2 {
         font-size: 16px;
     }
     .finance-score strong {
-        font-size: 33px;
+        font-size: 40px;
+        letter-spacing: -2.5px;
+    }
+    .finance-score-status {
+        margin-top: 24px;
+    }
+    .finance-score-component {
+        min-height: 45px;
     }
 }
-/* =========================================================
-   SMALL PHONES
-   ========================================================= */
+/* ============================================================
+   30. SMALL PHONES
+   ============================================================ */
 @media (max-width: 380px) {
+    .finance-module {
+        padding-left: 0;
+        padding-right: 0;
+    }
+    .finance-title {
+        font-size: 29px;
+    }
     .finance-card-header {
         grid-template-columns:
-            31px
+            29px
             minmax(0, 1fr)
-            24px;
-        gap: 9px;
+            23px;
+        gap: 10px;
     }
     .finance-card-index {
-        width: 29px;
-        height: 29px;
-        font-size: 8px;
+        width: 27px;
+        height: 27px;
+        font-size: 7px;
+    }
+    .finance-card-header::after {
+        left: 52px;
     }
     .finance-drawer-inner {
-        padding-left: 51px;
+        padding-left: 52px;
+    }
+    .finance-stability-card {
+        padding:
+            19px
+            14px
+            17px;
+    }
+    .finance-stability-header {
+        display: block;
+    }
+    .finance-score {
+        margin-top: 23px;
+    }
+    .finance-score strong {
+        font-size: 42px;
     }
     .finance-stat-card {
-        min-height: 75px;
-        padding: 11px;
-    }
-    .finance-score-component span {
-        font-size: 9px;
+        min-height: 82px;
+        padding:
+            12px;
     }
 }
-/* =========================================================
-   REDUCED MOTION
-   ========================================================= */
+/* ============================================================
+   31. LANDSCAPE / SHORT SCREENS
+   ============================================================ */
+@media (max-height: 650px) and (orientation: landscape) {
+    .finance-module {
+        padding-bottom: 35px;
+    }
+    .finance-header {
+        margin-bottom: 22px;
+    }
+    .finance-stability-card {
+        margin-top: 25px;
+    }
+}
+/* ============================================================
+   32. ACCESSIBILITY
+   ============================================================ */
+.finance-card-header:focus-visible,
+.finance-primary-button:focus-visible,
+.finance-icon-button:focus-visible {
+    outline:
+        1px solid
+        rgba(255,255,255,0.35);
+    outline-offset: 2px;
+}
+.finance-input:focus-visible {
+    outline: none;
+}
+/* ============================================================
+   33. REDUCED MOTION
+   ============================================================ */
 @media (prefers-reduced-motion: reduce) {
     .finance-card,
-    .finance-drawer,
+    .finance-card-index,
     .finance-card-chevron,
-    .finance-score-line-fill,
+    .finance-drawer,
+    .finance-input,
     .finance-primary-button,
-    .finance-input {
+    .finance-score-line-fill {
         transition: none !important;
+    }
+}
+/* ============================================================
+   34. DARK MODE GUARANTEE
+   ============================================================ */
+@media (prefers-color-scheme: light) {
+    #finance-container {
+        color-scheme: dark;
     }
 }
