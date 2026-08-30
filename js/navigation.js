@@ -22,7 +22,7 @@ function getCurrentSection() {
     return currentSection;
 }
 /* =========================================
-   SET ACTIVE SECTION
+   SHOW SECTION
    ========================================= */
 function setActiveSection(sectionName) {
     if (!isValidSection(sectionName)) {
@@ -33,78 +33,63 @@ function setActiveSection(sectionName) {
         return false;
     }
     /*
-       Получаем все элементы,
-       у которых есть data-section.
+       Работаем только с основными
+       блоками приложения.
     */
-    const elements =
+    const sections =
         document.querySelectorAll(
-            "[data-section]"
+            "[data-section-view]"
         );
-    elements.forEach(element => {
+    sections.forEach(section => {
         const name =
-            element.dataset.section;
+            section.dataset.sectionView;
         const active =
             name === sectionName;
-        /*
-           Если это кнопка навигации —
-           меняем её активное состояние.
-        */
-        if (
-            element.closest(
-                "#bottom-navigation"
-            )
-        ) {
-            element.classList.toggle(
-                "is-active",
-                active
-            );
-            if (active) {
-                element.setAttribute(
-                    "aria-current",
-                    "page"
-                );
-            } else {
-                element.removeAttribute(
-                    "aria-current"
-                );
-            }
-            return;
-        }
-        /*
-           Если это основной раздел —
-           показываем или скрываем его.
-        */
-        element.classList.toggle(
+        section.hidden =
+            !active;
+        section.classList.toggle(
             "is-active",
             active
         );
-        element.hidden =
-            !active;
+    });
+    /*
+       Обновляем нижнюю навигацию.
+    */
+    const buttons =
+        document.querySelectorAll(
+            "#bottom-navigation [data-section]"
+        );
+    buttons.forEach(button => {
+        const active =
+            button.dataset.section === sectionName;
+        button.classList.toggle(
+            "is-active",
+            active
+        );
+        if (active) {
+            button.setAttribute(
+                "aria-current",
+                "page"
+            );
+        } else {
+            button.removeAttribute(
+                "aria-current"
+            );
+        }
     });
     currentSection =
         sectionName;
     return true;
 }
 /* =========================================
-   NAVIGATION CLICK
+   CLICK HANDLER
    ========================================= */
 function handleNavigationClick(event) {
     const button =
         event.target.closest(
-            "[data-section]"
+            "#bottom-navigation [data-section]"
         );
     if (!button) {
-        return;
-    }
-    /*
-       Защита от случайного
-       поиска элементов вне навигации.
-    */
-    if (
-        !button.closest(
-            "#bottom-navigation"
-        )
-    ) {
         return;
     }
     const sectionName =
@@ -114,7 +99,7 @@ function handleNavigationClick(event) {
     );
 }
 /* =========================================
-   INITIALIZE NAVIGATION
+   INITIALIZE
    ========================================= */
 function initNavigation() {
     const navigation =
@@ -128,8 +113,7 @@ function initNavigation() {
         return false;
     }
     /*
-       Защита от повторного
-       добавления обработчика.
+       Не допускаем двойной обработчик.
     */
     if (
         navigation.dataset.navigationInitialized ===
