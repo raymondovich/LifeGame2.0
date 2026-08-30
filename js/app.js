@@ -1,13 +1,16 @@
 /* =========================================
    LIFE GAME 2.0
-   APPLICATION CORE
-   ========================================= */
-/* =========================================
-   MODULES
+   APPLICATION CORE + STORAGE TEST
    ========================================= */
 import { initFinance } from "../modules/finance/finance.js";
 import { initHealth } from "../modules/health/health.js";
 import { initDevelopment } from "../modules/development/development.js";
+import {
+    getState,
+    addLog,
+    getLogs,
+    getStorageInfo
+} from "./storage.js";
 /* =========================================
    APPLICATION STATE
    ========================================= */
@@ -29,7 +32,7 @@ const DOM = {
     }
 };
 /* =========================================
-   CACHE DOM ELEMENTS
+   CACHE DOM
    ========================================= */
 function cacheDOM() {
     DOM.app =
@@ -46,7 +49,7 @@ function cacheDOM() {
         document.getElementById("development-section");
 }
 /* =========================================
-   CHECK DOM
+   VALIDATE DOM
    ========================================= */
 function validateDOM() {
     const requiredElements = [
@@ -71,7 +74,72 @@ function validateDOM() {
     return true;
 }
 /* =========================================
-   GET VALID SECTION
+   STORAGE TEST
+   ========================================= */
+function testStorage() {
+    console.log(
+        "========================================="
+    );
+    console.log(
+        "LIFE GAME 2.0 — STORAGE TEST"
+    );
+    console.log(
+        "========================================="
+    );
+    try {
+        /* Получаем текущее состояние */
+        const state =
+            getState();
+        console.log(
+            "Storage: OK"
+        );
+        console.log(
+            "Player ID:",
+            state.player.id
+        );
+        console.log(
+            "Created:",
+            state.player.createdAt
+        );
+        console.log(
+            "Last active:",
+            state.player.lastActive
+        );
+        /* Добавляем тестовый лог */
+        addLog({
+            section: "system",
+            action: "storage_test",
+            message: "Storage test executed"
+        });
+        /* Получаем логи */
+        const logs =
+            getLogs();
+        console.log(
+            "Logs count:",
+            logs.length
+        );
+        /* Информация о storage */
+        const info =
+            getStorageInfo();
+        console.log(
+            "Storage info:",
+            info
+        );
+        console.log(
+            "Storage test: PASSED"
+        );
+        console.log(
+            "========================================="
+        );
+    } catch (error) {
+        console.error(
+            "Storage test: FAILED",
+            error
+        );
+    }
+}
+/* =========================================
+   SECTION VALIDATION
    ========================================= */
 function isValidSection(sectionName) {
     return (
@@ -100,11 +168,15 @@ function showSection(sectionName) {
                 "is-active",
                 active
             );
-            section.hidden = !active;
+            section.hidden =
+                !active;
         }
     );
-    App.currentSection = sectionName;
-    updateNavigation(sectionName);
+    App.currentSection =
+        sectionName;
+    updateNavigation(
+        sectionName
+    );
 }
 /* =========================================
    UPDATE NAVIGATION
@@ -135,7 +207,7 @@ function updateNavigation(sectionName) {
     });
 }
 /* =========================================
-   NAVIGATION EVENTS
+   NAVIGATION
    ========================================= */
 function initNavigation() {
     if (!DOM.navigation) return;
@@ -147,16 +219,16 @@ function initNavigation() {
                     "[data-section]"
                 );
             if (!button) return;
-            const sectionName =
-                button.dataset.section;
-            showSection(sectionName);
+            showSection(
+                button.dataset.section
+            );
         }
     );
 }
 /* =========================================
-   INITIALIZE FINANCE
+   MODULE INITIALIZATION
    ========================================= */
-function initializeFinance() {
+function initializeModules() {
     try {
         initFinance();
         console.log(
@@ -164,15 +236,10 @@ function initializeFinance() {
         );
     } catch (error) {
         console.error(
-            "LIFE GAME: Finance initialization error:",
+            "LIFE GAME: Finance error:",
             error
         );
     }
-}
-/* =========================================
-   INITIALIZE HEALTH
-   ========================================= */
-function initializeHealth() {
     try {
         initHealth();
         console.log(
@@ -180,15 +247,10 @@ function initializeHealth() {
         );
     } catch (error) {
         console.error(
-            "LIFE GAME: Health initialization error:",
+            "LIFE GAME: Health error:",
             error
         );
     }
-}
-/* =========================================
-   INITIALIZE DEVELOPMENT
-   ========================================= */
-function initializeDevelopment() {
     try {
         initDevelopment();
         console.log(
@@ -196,18 +258,10 @@ function initializeDevelopment() {
         );
     } catch (error) {
         console.error(
-            "LIFE GAME: Development initialization error:",
+            "LIFE GAME: Development error:",
             error
         );
     }
-}
-/* =========================================
-   INITIALIZE MODULES
-   ========================================= */
-function initializeModules() {
-    initializeFinance();
-    initializeHealth();
-    initializeDevelopment();
 }
 /* =========================================
    INITIALIZE APPLICATION
@@ -220,18 +274,32 @@ function initApp() {
     if (!validateDOM()) {
         return;
     }
-    initNavigation();
+    /*
+       Сначала проверяем storage.
+    */
+    testStorage();
+    /*
+       Затем запускаем модули.
+    */
     initializeModules();
+    /*
+       Затем запускаем навигацию.
+    */
+    initNavigation();
+    /*
+       Открываем Finance.
+    */
     showSection(
         App.currentSection
     );
-    App.initialized = true;
+    App.initialized =
+        true;
     console.log(
         "LIFE GAME 2.0: Application initialized."
     );
 }
 /* =========================================
-   START
+   APPLICATION START
    ========================================= */
 if (
     document.readyState === "loading"
@@ -239,7 +307,9 @@ if (
     document.addEventListener(
         "DOMContentLoaded",
         initApp,
-        { once: true }
+        {
+            once: true
+        }
     );
 } else {
     initApp();
