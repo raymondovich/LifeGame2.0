@@ -1,324 +1,763 @@
-/* =========================================
+/* =========================================================
    LIFE GAME 2.0
-   APPLICATION CORE + STORAGE TEST
-   ========================================= */
-import { initFinance } from "../modules/finance/finance.js";
-import { initHealth } from "../modules/health/health.js";
-import { initDevelopment } from "../modules/development/development.js";
+   APPLICATION CORE
+
+   app.js отвечает только за:
+
+   - запуск приложения;
+   - проверку DOM;
+   - загрузку состояния;
+   - инициализацию модулей;
+   - подключение navigation;
+   - управление жизненным циклом приложения.
+
+   app.js НЕ содержит:
+
+   - Finance logic;
+   - Health logic;
+   - Development logic;
+   - расчёты;
+   - storage mechanics;
+   - navigation mechanics.
+
+   ========================================================= */
+
+import {
+    initFinance
+} from "../modules/finance/finance.js";
+
+import {
+    initHealth
+} from "../modules/health/health.js";
+
+import {
+    initDevelopment
+} from "../modules/development/development.js";
+
 import {
     getState,
-    addLog,
-    getLogs,
-    getStorageInfo
+    addLog
 } from "./storage.js";
-/* =========================================
+
+import {
+    initNavigation,
+    setActiveSection,
+    getCurrentSection,
+    isValidSection
+} from "./navigation.js";
+
+
+/* =========================================================
    APPLICATION STATE
-   ========================================= */
+   ========================================================= */
+
 const App = {
+
     initialized: false,
-    currentSection: "finance"
-};
-/* =========================================
-   DOM
-   ========================================= */
-const DOM = {
-    app: null,
-    main: null,
-    navigation: null,
-    sections: {
-        finance: null,
-        health: null,
-        development: null
+
+    currentSection: "finance",
+
+    state: null,
+
+    modules: {
+
+        finance: {
+            initialized: false
+        },
+
+        health: {
+            initialized: false
+        },
+
+        development: {
+            initialized: false
+        }
+
     }
+
 };
-/* =========================================
+
+
+/* =========================================================
+   DOM CACHE
+   ========================================================= */
+
+const DOM = {
+
+    app: null,
+
+    main: null,
+
+    navigation: null,
+
+    sections: {
+
+        finance: null,
+
+        health: null,
+
+        development: null
+
+    }
+
+};
+
+
+/* =========================================================
    CACHE DOM
-   ========================================= */
+   ========================================================= */
+
 function cacheDOM() {
+
     DOM.app =
         document.getElementById("app");
+
     DOM.main =
         document.getElementById("app-main");
+
     DOM.navigation =
-        document.getElementById("bottom-navigation");
+        document.getElementById(
+            "bottom-navigation"
+        );
+
     DOM.sections.finance =
-        document.getElementById("finance-section");
+        document.getElementById(
+            "finance-section"
+        );
+
     DOM.sections.health =
-        document.getElementById("health-section");
+        document.getElementById(
+            "health-section"
+        );
+
     DOM.sections.development =
-        document.getElementById("development-section");
+        document.getElementById(
+            "development-section"
+        );
+
 }
-/* =========================================
-   VALIDATE DOM
-   ========================================= */
+
+
+/* =========================================================
+   DOM VALIDATION
+   ========================================================= */
+
 function validateDOM() {
+
     const requiredElements = [
+
         ["#app", DOM.app],
+
         ["#app-main", DOM.main],
-        ["#bottom-navigation", DOM.navigation],
-        ["#finance-section", DOM.sections.finance],
-        ["#health-section", DOM.sections.health],
-        ["#development-section", DOM.sections.development]
+
+        [
+            "#bottom-navigation",
+            DOM.navigation
+        ],
+
+        [
+            "#finance-section",
+            DOM.sections.finance
+        ],
+
+        [
+            "#health-section",
+            DOM.sections.health
+        ],
+
+        [
+            "#development-section",
+            DOM.sections.development
+        ]
+
     ];
+
+
     const missingElements =
         requiredElements
-            .filter(([, element]) => !element)
-            .map(([selector]) => selector);
-    if (missingElements.length > 0) {
+
+            .filter(
+                ([, element]) => !element
+            )
+
+            .map(
+                ([selector]) => selector
+            );
+
+
+    if (
+        missingElements.length > 0
+    ) {
+
         console.error(
-            "LIFE GAME: Не найдены элементы:",
+            "LIFE GAME: Не найдены обязательные DOM-элементы:",
             missingElements
         );
+
         return false;
     }
+
+
     return true;
+
 }
-/* =========================================
-   STORAGE TEST
-   ========================================= */
-function testStorage() {
-    console.log(
-        "========================================="
-    );
-    console.log(
-        "LIFE GAME 2.0 — STORAGE TEST"
-    );
-    console.log(
-        "========================================="
-    );
+
+
+/* =========================================================
+   STORAGE INITIALIZATION
+   ========================================================= */
+
+/*
+    storage.js самостоятельно создаёт
+    состояние игрока при первом запуске.
+
+    app.js только получает это состояние
+    и передаёт его дальше модулям.
+
+    Никакой логики хранения здесь нет.
+*/
+
+function initializeState() {
+
     try {
-        /* Получаем текущее состояние */
-        const state =
+
+        App.state =
             getState();
+
+
+        if (
+            !App.state ||
+            typeof App.state !== "object"
+        ) {
+
+            throw new Error(
+                "Storage returned invalid state."
+            );
+
+        }
+
+
+        if (
+            !App.state.player
+        ) {
+
+            throw new Error(
+                "Player state is missing."
+            );
+
+        }
+
+
         console.log(
-            "Storage: OK"
+            "LIFE GAME: State loaded."
         );
+
+
         console.log(
-            "Player ID:",
-            state.player.id
+            "LIFE GAME: Player ID:",
+            App.state.player.id
         );
-        console.log(
-            "Created:",
-            state.player.createdAt
-        );
-        console.log(
-            "Last active:",
-            state.player.lastActive
-        );
-        /* Добавляем тестовый лог */
-        addLog({
-            section: "system",
-            action: "storage_test",
-            message: "Storage test executed"
-        });
-        /* Получаем логи */
-        const logs =
-            getLogs();
-        console.log(
-            "Logs count:",
-            logs.length
-        );
-        /* Информация о storage */
-        const info =
-            getStorageInfo();
-        console.log(
-            "Storage info:",
-            info
-        );
-        console.log(
-            "Storage test: PASSED"
-        );
-        console.log(
-            "========================================="
-        );
+
+
+        return true;
+
     } catch (error) {
+
         console.error(
-            "Storage test: FAILED",
+            "LIFE GAME: State initialization failed:",
             error
         );
+
+        return false;
+
     }
+
 }
-/* =========================================
-   SECTION VALIDATION
-   ========================================= */
-function isValidSection(sectionName) {
-    return (
-        sectionName === "finance" ||
-        sectionName === "health" ||
-        sectionName === "development"
-    );
-}
-/* =========================================
-   SHOW SECTION
-   ========================================= */
-function showSection(sectionName) {
-    if (!isValidSection(sectionName)) {
+
+
+/* =========================================================
+   APPLICATION LOG
+   ========================================================= */
+
+/*
+    Логируем только реальные события
+    приложения.
+
+    Не используем storage test при каждом запуске.
+*/
+
+function logApplicationStart() {
+
+    try {
+
+        addLog({
+
+            section: "system",
+
+            action: "application_start",
+
+            message:
+                "LIFE GAME application initialized."
+
+        });
+
+    } catch (error) {
+
         console.warn(
-            "LIFE GAME: Неизвестный раздел:",
+            "LIFE GAME: Не удалось записать application log:",
+            error
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   MODULE INITIALIZER
+   ========================================================= */
+
+function initializeModule(
+    moduleName,
+    initializer
+) {
+
+    if (
+        App.modules[moduleName]?.initialized
+    ) {
+
+        return true;
+
+    }
+
+
+    try {
+
+        initializer();
+
+
+        App.modules[moduleName] = {
+
+            initialized: true
+
+        };
+
+
+        console.log(
+            `LIFE GAME: ${moduleName} module initialized.`
+        );
+
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            `LIFE GAME: ${moduleName} module initialization failed:`,
+            error
+        );
+
+
+        App.modules[moduleName] = {
+
+            initialized: false,
+
+            error
+
+        };
+
+
+        return false;
+
+    }
+
+}
+
+
+/* =========================================================
+   INITIALIZE ALL MODULES
+   ========================================================= */
+
+function initializeModules() {
+
+    const results = {
+
+        finance:
+            initializeModule(
+                "finance",
+                initFinance
+            ),
+
+        health:
+            initializeModule(
+                "health",
+                initHealth
+            ),
+
+        development:
+            initializeModule(
+                "development",
+                initDevelopment
+            )
+
+    };
+
+
+    return results;
+
+}
+
+
+/* =========================================================
+   SECTION MANAGEMENT
+   ========================================================= */
+
+/*
+    navigation.js является единственным владельцем
+    navigation state.
+
+    app.js только синхронизирует своё состояние
+    с navigation layer.
+*/
+
+function syncCurrentSection() {
+
+    const section =
+        getCurrentSection();
+
+
+    if (
+        isValidSection(section)
+    ) {
+
+        App.currentSection =
+            section;
+
+        return section;
+
+    }
+
+
+    App.currentSection =
+        "finance";
+
+
+    return App.currentSection;
+
+}
+
+
+/* =========================================================
+   SHOW SECTION
+   ========================================================= */
+
+/*
+    Public facade.
+
+    Модули и внешние части приложения могут
+    использовать showSection(), не зная внутренней
+    реализации navigation.js.
+*/
+
+function showSection(
+    sectionName
+) {
+
+    if (
+        !isValidSection(sectionName)
+    ) {
+
+        console.warn(
+            "LIFE GAME: Unknown section:",
             sectionName
         );
-        return;
+
+        return false;
+
     }
-    Object.entries(DOM.sections).forEach(
-        ([name, section]) => {
-            if (!section) return;
-            const active =
-                name === sectionName;
-            section.classList.toggle(
-                "is-active",
-                active
-            );
-            section.hidden =
-                !active;
-        }
-    );
+
+
+    const success =
+        setActiveSection(
+            sectionName
+        );
+
+
+    if (!success) {
+
+        return false;
+
+    }
+
+
     App.currentSection =
         sectionName;
-    updateNavigation(
-        sectionName
+
+
+    return true;
+
+}
+
+
+/* =========================================================
+   NAVIGATION INITIALIZATION
+   ========================================================= */
+
+function initializeNavigation() {
+
+    const initialized =
+        initNavigation();
+
+
+    if (!initialized) {
+
+        console.error(
+            "LIFE GAME: Navigation initialization failed."
+        );
+
+        return false;
+
+    }
+
+
+    syncCurrentSection();
+
+
+    return true;
+
+}
+
+
+/* =========================================================
+   APPLICATION ERROR HANDLER
+   ========================================================= */
+
+function handleApplicationError(
+    error
+) {
+
+    console.error(
+        "LIFE GAME: Application error:",
+        error
     );
+
 }
-/* =========================================
-   UPDATE NAVIGATION
-   ========================================= */
-function updateNavigation(sectionName) {
-    if (!DOM.navigation) return;
-    const buttons =
-        DOM.navigation.querySelectorAll(
-            "[data-section]"
-        );
-    buttons.forEach(button => {
-        const active =
-            button.dataset.section === sectionName;
-        button.classList.toggle(
-            "is-active",
-            active
-        );
-        if (active) {
-            button.setAttribute(
-                "aria-current",
-                "page"
-            );
-        } else {
-            button.removeAttribute(
-                "aria-current"
-            );
-        }
-    });
-}
-/* =========================================
-   NAVIGATION
-   ========================================= */
-function initNavigation() {
-    if (!DOM.navigation) return;
-    DOM.navigation.addEventListener(
-        "click",
-        event => {
-            const button =
-                event.target.closest(
-                    "[data-section]"
-                );
-            if (!button) return;
-            showSection(
-                button.dataset.section
-            );
-        }
-    );
-}
-/* =========================================
-   MODULE INITIALIZATION
-   ========================================= */
-function initializeModules() {
-    try {
-        initFinance();
-        console.log(
-            "LIFE GAME: Finance initialized."
-        );
-    } catch (error) {
-        console.error(
-            "LIFE GAME: Finance error:",
-            error
-        );
-    }
-    try {
-        initHealth();
-        console.log(
-            "LIFE GAME: Health initialized."
-        );
-    } catch (error) {
-        console.error(
-            "LIFE GAME: Health error:",
-            error
-        );
-    }
-    try {
-        initDevelopment();
-        console.log(
-            "LIFE GAME: Development initialized."
-        );
-    } catch (error) {
-        console.error(
-            "LIFE GAME: Development error:",
-            error
-        );
-    }
-}
-/* =========================================
-   INITIALIZE APPLICATION
-   ========================================= */
+
+
+/* =========================================================
+   APPLICATION INITIALIZATION
+   ========================================================= */
+
 function initApp() {
-    if (App.initialized) {
-        return;
+
+    if (
+        App.initialized
+    ) {
+
+        return true;
+
     }
+
+
+    console.log(
+        "========================================="
+    );
+
+    console.log(
+        "LIFE GAME 2.0"
+    );
+
+    console.log(
+        "Application initialization started."
+    );
+
+    console.log(
+        "========================================="
+    );
+
+
+    /*
+        1. Получаем DOM.
+    */
+
     cacheDOM();
-    if (!validateDOM()) {
-        return;
+
+
+    /*
+        2. Проверяем DOM.
+    */
+
+    if (
+        !validateDOM()
+    ) {
+
+        console.error(
+            "LIFE GAME: Application initialization aborted."
+        );
+
+        return false;
+
     }
+
+
     /*
-       Сначала проверяем storage.
+        3. Загружаем состояние игрока.
     */
-    testStorage();
+
+    if (
+        !initializeState()
+    ) {
+
+        console.error(
+            "LIFE GAME: State initialization failed."
+        );
+
+        return false;
+
+    }
+
+
     /*
-       Затем запускаем модули.
+        4. Инициализируем модули.
+
+        Каждый модуль независим.
+        Ошибка одного модуля не должна
+        остановить остальные.
     */
-    initializeModules();
+
+    const moduleResults =
+        initializeModules();
+
+
     /*
-       Затем запускаем навигацию.
+        5. Инициализируем navigation.
     */
-    initNavigation();
+
+    if (
+        !initializeNavigation()
+    ) {
+
+        console.error(
+            "LIFE GAME: Navigation initialization failed."
+        );
+
+    }
+
+
     /*
-       Открываем Finance.
+        6. Устанавливаем начальный раздел.
+
+        Finance — стартовый экран.
     */
+
     showSection(
         App.currentSection
     );
+
+
+    /*
+        7. Записываем запуск приложения.
+    */
+
+    logApplicationStart();
+
+
+    /*
+        8. Финальный статус.
+    */
+
     App.initialized =
         true;
+
+
+    console.log(
+        "========================================="
+    );
+
     console.log(
         "LIFE GAME 2.0: Application initialized."
     );
+
+    console.log(
+        "Current section:",
+        App.currentSection
+    );
+
+    console.log(
+        "Modules:",
+        moduleResults
+    );
+
+    console.log(
+        "========================================="
+    );
+
+
+    return true;
+
 }
-/* =========================================
+
+
+/* =========================================================
    APPLICATION START
-   ========================================= */
+   ========================================================= */
+
+function startApplication() {
+
+    try {
+
+        initApp();
+
+    } catch (error) {
+
+        handleApplicationError(
+            error
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   DOM READY
+   ========================================================= */
+
 if (
     document.readyState === "loading"
 ) {
+
     document.addEventListener(
         "DOMContentLoaded",
-        initApp,
+        startApplication,
         {
             once: true
         }
     );
+
 } else {
-    initApp();
+
+    startApplication();
+
 }
-/* =========================================
+
+
+/* =========================================================
    PUBLIC API
-   ========================================= */
+   ========================================================= */
+
 export {
+
     App,
+
+    DOM,
+
     initApp,
-    showSection
+
+    showSection,
+
+    initializeModules,
+
+    initializeState
+
 };
