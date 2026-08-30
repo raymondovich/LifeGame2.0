@@ -26,30 +26,39 @@ function currentMonthLabel() {
     ).format(new Date()).toUpperCase();
 }
 function money(value) {
-    const number = Number(value) || 0;
+    const number =
+        Number(value) || 0;
     return new Intl.NumberFormat(
         "ru-RU",
         {
             maximumFractionDigits: 0
         }
-    ).format(Math.max(0, number)) + " ₽";
+    ).format(
+        Math.max(0, number)
+    ) + " ₽";
 }
 function numberValue(value) {
-    if (typeof value === "number") {
+    if (
+        typeof value === "number"
+    ) {
         return Math.max(0, value);
     }
-    const normalized = String(value || "")
-        .replace(/\s/g, "")
-        .replace(",", ".")
-        .replace(/[^\d.]/g, "");
-    const result = Number(normalized);
+    const normalized =
+        String(value || "")
+            .replace(/\s/g, "")
+            .replace(",", ".")
+            .replace(/[^\d.]/g, "");
+    const result =
+        Number(normalized);
     return Number.isFinite(result)
         ? Math.max(0, result)
         : 0;
 }
 function percentage(value, base) {
-    const v = numberValue(value);
-    const b = numberValue(base);
+    const v =
+        numberValue(value);
+    const b =
+        numberValue(base);
     if (b <= 0) {
         return 0;
     }
@@ -125,15 +134,18 @@ function saveFinanceData(data) {
    ========================================================= */
 function expensesTotal(month) {
     if (
-        !Array.isArray(month.expenses)
+        !Array.isArray(
+            month.expenses
+        )
     ) {
         return 0;
     }
     return month.expenses.reduce(
         (sum, expense) => {
-            return sum + numberValue(
-                expense.amount
-            );
+            return sum +
+                numberValue(
+                    expense.amount
+                );
         },
         0
     );
@@ -172,11 +184,10 @@ function injectStyles() {
     style.id =
         "life-finance-runtime-styles";
     style.textContent = `
-        /* =================================================
+        /* ===============================================
            ROOT
-           ================================================= */
+           =============================================== */
         .lg-finance {
-            --f-bg: #050505;
             --f-surface:
                 rgba(255,255,255,.035);
             --f-border:
@@ -191,7 +202,7 @@ function injectStyles() {
                 rgba(255,255,255,.42);
             --f-dim:
                 rgba(255,255,255,.24);
-            width: 100%;
+            width:100%;
             color:
                 var(--f-white);
             font-family:
@@ -205,77 +216,56 @@ function injectStyles() {
             -webkit-font-smoothing:
                 antialiased;
         }
-        /* =================================================
+        /* ===============================================
            HEADER
-           ================================================= */
+           =============================================== */
         .lg-finance-header {
             padding:
                 4px
                 2px
                 22px;
         }
-        .lg-finance-module {
-            margin-bottom: 8px;
-            color:
-                var(--f-muted);
-            font-size: 8px;
-            font-weight: 800;
-            letter-spacing:
-                .24em;
-            text-transform:
-                uppercase;
-        }
         .lg-finance-title {
-            margin: 0;
+            margin:0;
             font-size:
                 clamp(
                     38px,
                     10vw,
                     52px
                 );
-            line-height:
-                .88;
-            font-weight:
-                850;
-            letter-spacing:
-                -.07em;
+            line-height:.88;
+            font-weight:850;
+            letter-spacing:-.07em;
         }
         .lg-finance-month {
-            display:
-                inline-flex;
-            margin-top: 14px;
+            display:inline-flex;
+            margin-top:14px;
             padding:
                 7px
                 10px;
             border:
                 1px solid
                 var(--f-border);
-            border-radius:
-                999px;
+            border-radius:999px;
             background:
                 rgba(255,255,255,.025);
             color:
                 var(--f-muted);
-            font-size: 7px;
-            font-weight: 750;
-            letter-spacing:
-                .12em;
+            font-size:7px;
+            font-weight:750;
+            letter-spacing:.12em;
         }
-        /* =================================================
+        /* ===============================================
            CARD
-           ================================================= */
+           =============================================== */
         .lg-finance-card {
-            position:
-                relative;
-            overflow:
-                hidden;
-            margin-bottom:
-                12px;
+            position:relative;
+            overflow:hidden;
+            margin-bottom:12px;
             border:
                 1px solid
                 var(--f-border);
-            border-radius:
-                22px;
+            border-radius:22px;
             background:
                 linear-gradient(
                     145deg,
@@ -291,113 +281,85 @@ function injectStyles() {
                 blur(18px);
         }
         .lg-finance-card-inner {
-            position:
-                relative;
-            z-index: 1;
-            padding:
-                21px;
+            position:relative;
+            z-index:1;
+            padding:21px;
         }
-        /* =================================================
-           CARD HEADER
-           ================================================= */
         .lg-finance-card-header {
-            display:
-                flex;
-            align-items:
-                center;
-            justify-content:
-                space-between;
-            gap: 20px;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:20px;
         }
         .lg-finance-card-label {
             color:
                 var(--f-muted);
-            font-size: 8px;
-            font-weight: 800;
-            letter-spacing:
-                .18em;
-            text-transform:
-                uppercase;
+            font-size:8px;
+            font-weight:800;
+            letter-spacing:.18em;
+            text-transform:uppercase;
         }
         .lg-finance-card-subtitle {
-            margin-top: 6px;
+            margin-top:6px;
             color:
                 var(--f-dim);
-            font-size: 10px;
-            line-height: 1.4;
+            font-size:10px;
+            line-height:1.4;
         }
         .lg-finance-card-number {
             color:
                 var(--f-dim);
-            font-size: 8px;
-            font-weight: 800;
-            letter-spacing:
-                .12em;
+            font-size:8px;
+            font-weight:800;
+            letter-spacing:.12em;
         }
-        /* =================================================
+        /* ===============================================
            ACCORDION
-           ================================================= */
+           =============================================== */
         .lg-finance-accordion {
-            cursor:
-                pointer;
+            cursor:default;
         }
         .lg-finance-accordion-header {
-            width: 100%;
-            display:
-                flex;
-            align-items:
-                center;
-            justify-content:
-                space-between;
-            gap: 18px;
-            padding:
-                21px;
-            border: 0;
-            background:
-                transparent;
-            color:
-                inherit;
-            font-family:
-                inherit;
-            text-align:
-                left;
-            cursor:
-                pointer;
+            width:100%;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:18px;
+            padding:21px;
+            border:0;
+            background:transparent;
+            color:inherit;
+            font-family:inherit;
+            text-align:left;
+            cursor:pointer;
         }
         .lg-finance-accordion-title {
-            min-width: 0;
+            min-width:0;
         }
         .lg-finance-accordion-value {
-            display:
-                flex;
-            align-items:
-                center;
-            gap: 12px;
-            flex-shrink: 0;
+            display:flex;
+            align-items:center;
+            gap:12px;
+            flex-shrink:0;
         }
         .lg-finance-accordion-amount {
-            font-size: 18px;
-            font-weight: 800;
-            letter-spacing:
-                -.04em;
+            font-size:18px;
+            font-weight:800;
+            letter-spacing:-.04em;
         }
         .lg-finance-accordion-arrow {
-            width: 26px;
-            height: 26px;
-            display:
-                grid;
-            place-items:
-                center;
+            width:26px;
+            height:26px;
+            display:grid;
+            place-items:center;
             border:
                 1px solid
                 var(--f-border);
-            border-radius:
-                50%;
+            border-radius:50%;
             color:
                 var(--f-muted);
-            font-size: 16px;
-            font-weight: 300;
-            line-height: 1;
+            font-size:16px;
+            font-weight:300;
             transition:
                 transform .3s
                 cubic-bezier(
@@ -411,18 +373,15 @@ function injectStyles() {
         }
         .lg-finance-accordion.open
         .lg-finance-accordion-arrow {
-            transform:
-                rotate(45deg);
+            transform:rotate(45deg);
             color:
                 var(--f-white);
             border-color:
                 rgba(255,255,255,.2);
         }
         .lg-finance-accordion-content {
-            display:
-                grid;
-            grid-template-rows:
-                0fr;
+            display:grid;
+            grid-template-rows:0fr;
             transition:
                 grid-template-rows
                 .36s
@@ -435,17 +394,15 @@ function injectStyles() {
         }
         .lg-finance-accordion.open
         .lg-finance-accordion-content {
-            grid-template-rows:
-                1fr;
+            grid-template-rows:1fr;
         }
         .lg-finance-accordion-inner {
-            min-height: 0;
-            overflow:
-                hidden;
+            min-height:0;
+            overflow:hidden;
             padding:
                 0
                 21px;
-            opacity: 0;
+            opacity:0;
             transform:
                 translateY(-7px);
             transition:
@@ -465,7 +422,7 @@ function injectStyles() {
                 0
                 21px
                 21px;
-            opacity: 1;
+            opacity:1;
             transform:
                 translateY(0);
         }
@@ -474,77 +431,63 @@ function injectStyles() {
                 1px solid
                 var(--f-border);
         }
-        /* =================================================
+        /* ===============================================
            BIG NUMBER
-           ================================================= */
+           =============================================== */
         .lg-finance-big-number {
-            margin-top:
-                25px;
+            margin-top:25px;
             font-size:
                 clamp(
                     38px,
                     11vw,
                     58px
                 );
-            line-height:
-                .9;
-            font-weight:
-                850;
-            letter-spacing:
-                -.07em;
+            line-height:.9;
+            font-weight:850;
+            letter-spacing:-.07em;
         }
-        /* =================================================
+        /* ===============================================
            GOAL
-           ================================================= */
+           =============================================== */
         .lg-finance-goal-row {
-            display:
-                flex;
-            align-items:
-                flex-end;
-            justify-content:
-                space-between;
-            gap: 15px;
-            margin-top:
-                25px;
+            display:flex;
+            align-items:flex-end;
+            justify-content:space-between;
+            gap:15px;
+            margin-top:25px;
         }
         .lg-finance-meta-label {
             color:
                 var(--f-dim);
-            font-size: 7px;
-            font-weight: 800;
-            letter-spacing:
-                .13em;
-            text-transform:
-                uppercase;
+            font-size:7px;
+            font-weight:800;
+            letter-spacing:.13em;
+            text-transform:uppercase;
         }
         .lg-finance-meta-value {
-            margin-top: 5px;
+            margin-top:5px;
             color:
                 var(--f-soft);
-            font-size: 15px;
-            font-weight: 750;
+            font-size:15px;
+            font-weight:750;
         }
-        /* =================================================
+        /* ===============================================
            PROGRESS
-           ================================================= */
+           =============================================== */
         .lg-finance-progress {
-            margin-top:
-                20px;
+            margin-top:20px;
         }
         .lg-finance-progress-track {
-            width: 100%;
-            height: 4px;
-            overflow:
-                hidden;
-            border-radius:
-                999px;
+            width:100%;
+            height:4px;
+            overflow:hidden;
+            border-radius:999px;
             background:
                 rgba(255,255,255,.065);
         }
         .lg-finance-progress-fill {
-            height: 100%;
-            border-radius:
-                inherit;
+            height:100%;
+            border-radius:inherit;
             background:
                 linear-gradient(
                     90deg,
@@ -564,48 +507,38 @@ function injectStyles() {
                 );
         }
         .lg-finance-progress-bottom {
-            display:
-                flex;
-            justify-content:
-                space-between;
-            gap: 10px;
-            margin-top:
-                8px;
+            display:flex;
+            justify-content:space-between;
+            gap:10px;
+            margin-top:8px;
             color:
                 var(--f-dim);
-            font-size: 7px;
-            font-weight: 750;
-            letter-spacing:
-                .1em;
+            font-size:7px;
+            font-weight:750;
+            letter-spacing:.1em;
         }
-        /* =================================================
+        /* ===============================================
            BUTTON
-           ================================================= */
+           =============================================== */
         .lg-finance-button {
-            appearance:
-                none;
-            min-height:
-                35px;
+            appearance:none;
+            min-height:35px;
             padding:
                 0
                 12px;
             border:
                 1px solid
                 var(--f-border-strong);
-            border-radius:
-                11px;
+            border-radius:11px;
             background:
                 rgba(255,255,255,.035);
             color:
                 var(--f-soft);
-            font-family:
-                inherit;
-            font-size: 8px;
-            font-weight: 800;
-            letter-spacing:
-                .11em;
-            cursor:
-                pointer;
+            font-family:inherit;
+            font-size:8px;
+            font-weight:800;
+            letter-spacing:.11em;
+            cursor:pointer;
             transition:
                 background .16s ease,
                 border-color .16s ease,
@@ -621,257 +554,238 @@ function injectStyles() {
                 rgba(255,255,255,.22);
         }
         .lg-finance-button:active {
-            transform:
-                scale(.97);
+            transform:scale(.97);
         }
         .lg-finance-main-button {
-            width: 100%;
-            margin-top:
-                20px;
+            width:100%;
+            margin-top:20px;
         }
-        /* =================================================
-           EXPENSES
-           ================================================= */
+        /* ===============================================
+           EXPENSE LIST
+           =============================================== */
         .lg-finance-expense-list {
             border-top:
                 1px solid
                 var(--f-border);
         }
-        .lg-finance-expense-row {
-            min-height:
-                55px;
-            display:
-                flex;
-            align-items:
-                center;
-            justify-content:
-                space-between;
-            gap: 15px;
+        /*
+         * Swipe container
+         */
+        .lg-finance-expense-swipe {
+            position:relative;
+            overflow:hidden;
             border-bottom:
                 1px solid
                 rgba(255,255,255,.055);
+            touch-action:pan-y;
+            user-select:none;
+            -webkit-user-select:none;
+        }
+        /*
+         * Delete action behind the row.
+         * Similar visual principle to iOS.
+         */
+        .lg-finance-expense-delete-action {
+            position:absolute;
+            top:0;
+            right:0;
+            bottom:0;
+            width:88px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            background:
+                rgba(255,255,255,.09);
+            color:
+                rgba(255,255,255,.9);
+            font-size:8px;
+            font-weight:800;
+            letter-spacing:.13em;
+            cursor:pointer;
+        }
+        /*
+         * Actual sliding row
+         */
+        .lg-finance-expense-row {
+            position:relative;
+            z-index:2;
+            min-height:55px;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:15px;
+            padding:0;
+            background:#0a0a0a;
+            transform:
+                translateX(0);
+            transition:
+                transform .28s
+                cubic-bezier(
+                    .22,
+                    1,
+                    .36,
+                    1
+                );
+            will-change:
+                transform;
+            cursor:
+                default;
+        }
+        .lg-finance-expense-row.swiped {
+            transform:
+                translateX(-88px);
         }
         .lg-finance-expense-name {
-            min-width: 0;
-            overflow:
-                hidden;
+            min-width:0;
+            overflow:hidden;
+            padding-left:2px;
             color:
                 var(--f-soft);
-            font-size: 11px;
-            font-weight: 600;
-            text-overflow:
-                ellipsis;
-            white-space:
-                nowrap;
-        }
-        .lg-finance-expense-actions {
-            display:
-                flex;
-            align-items:
-                center;
-            gap: 10px;
-            flex-shrink: 0;
+            font-size:11px;
+            font-weight:600;
+            text-overflow:ellipsis;
+            white-space:nowrap;
         }
         .lg-finance-expense-amount {
+            padding-right:2px;
             color:
                 var(--f-white);
-            font-size: 11px;
-            font-weight: 750;
+            font-size:11px;
+            font-weight:750;
+            flex-shrink:0;
         }
-        .lg-finance-delete {
-            width: 25px;
-            height: 25px;
-            display:
-                grid;
-            place-items:
-                center;
+        /*
+         * No delete button on the normal row.
+         */
+        .lg-finance-expense-actions {
+            display:flex;
+            align-items:center;
+            flex-shrink:0;
+        }
+        /*
+         * Add expense
+         */
+        .lg-finance-add-expense {
+            width:100%;
+            height:43px;
+            margin-top:12px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            gap:8px;
             border:
-                1px solid
-                transparent;
-            border-radius:
-                8px;
+                1px dashed
+                rgba(255,255,255,.13);
+            border-radius:11px;
             background:
-                transparent;
+                rgba(255,255,255,.018);
             color:
-                var(--f-dim);
-            font-size: 16px;
-            cursor:
-                pointer;
+                var(--f-muted);
+            font-family:inherit;
+            font-size:8px;
+            font-weight:800;
+            letter-spacing:.13em;
+            cursor:pointer;
         }
-        .lg-finance-delete:hover {
-            color:
-                var(--f-white);
-            background:
-                rgba(255,255,255,.05);
-            border-color:
-                var(--f-border);
+        .lg-finance-add-expense-plus {
+            font-size:16px;
+            font-weight:300;
         }
-        /* =================================================
+        /* ===============================================
            EMPTY
-           ================================================= */
+           =============================================== */
         .lg-finance-empty {
             padding:
                 22px
                 0;
             color:
                 var(--f-dim);
-            font-size: 9px;
+            font-size:9px;
         }
-        /* =================================================
-           ADD EXPENSE
-           ================================================= */
-        .lg-finance-add-expense {
-            width: 100%;
-            height: 43px;
-            margin-top:
-                12px;
-            display:
-                flex;
-            align-items:
-                center;
-            justify-content:
-                center;
-            gap: 8px;
-            border:
-                1px dashed
-                rgba(255,255,255,.13);
-            border-radius:
-                11px;
-            background:
-                rgba(255,255,255,.018);
-            color:
-                var(--f-muted);
-            font-family:
-                inherit;
-            font-size: 8px;
-            font-weight: 800;
-            letter-spacing:
-                .13em;
-            cursor:
-                pointer;
-        }
-        .lg-finance-add-expense-plus {
-            font-size:
-                16px;
-            font-weight:
-                300;
-        }
-        /* =================================================
+        /* ===============================================
            RESERVE
-           ================================================= */
+           =============================================== */
         .lg-finance-reserve-percent {
-            margin-top:
-                5px;
-            font-size:
-                18px;
-            font-weight:
-                800;
-            letter-spacing:
-                -.04em;
+            margin-top:5px;
+            font-size:18px;
+            font-weight:800;
+            letter-spacing:-.04em;
         }
-        /* =================================================
+        /* ===============================================
            STABILITY
-           ================================================= */
+           =============================================== */
         .lg-finance-stability-content {
-            display:
-                flex;
-            align-items:
-                center;
-            gap: 17px;
+            display:flex;
+            align-items:center;
+            gap:17px;
         }
         .lg-finance-stability-score {
-            width: 70px;
-            height: 70px;
-            display:
-                grid;
-            place-items:
-                center;
-            flex-shrink: 0;
+            width:70px;
+            height:70px;
+            display:grid;
+            place-items:center;
+            flex-shrink:0;
             border:
                 1px solid
                 var(--f-border-strong);
-            border-radius:
-                20px;
+            border-radius:20px;
             background:
                 rgba(255,255,255,.025);
             color:
                 var(--f-dim);
-            font-size:
-                30px;
-            font-weight:
-                800;
+            font-size:30px;
+            font-weight:800;
         }
         .lg-finance-stability-status {
             color:
                 var(--f-soft);
-            font-size:
-                9px;
-            font-weight:
-                800;
-            letter-spacing:
-                .13em;
+            font-size:9px;
+            font-weight:800;
+            letter-spacing:.13em;
         }
         .lg-finance-stability-text {
-            max-width:
-                360px;
-            margin-top:
-                7px;
+            max-width:360px;
+            margin-top:7px;
             color:
                 var(--f-dim);
-            font-size:
-                10px;
-            line-height:
-                1.5;
+            font-size:10px;
+            line-height:1.5;
         }
-        /* =================================================
+        /* ===============================================
            MODAL
-           ================================================= */
+           =============================================== */
         .lg-finance-modal {
-            position:
-                fixed;
-            inset: 0;
-            z-index:
-                99999;
-            display:
-                flex;
-            align-items:
-                flex-end;
-            justify-content:
-                center;
-            padding:
-                15px;
+            position:fixed;
+            inset:0;
+            z-index:99999;
+            display:flex;
+            align-items:flex-end;
+            justify-content:center;
+            padding:15px;
             background:
                 rgba(0,0,0,.7);
             backdrop-filter:
                 blur(12px);
             -webkit-backdrop-filter:
                 blur(12px);
-            opacity:
-                0;
-            pointer-events:
-                none;
+            opacity:0;
+            pointer-events:none;
             transition:
                 opacity .2s ease;
         }
         .lg-finance-modal.active {
-            opacity:
-                1;
-            pointer-events:
-                auto;
+            opacity:1;
+            pointer-events:auto;
         }
         .lg-finance-modal-panel {
-            width: 100%;
-            max-width:
-                520px;
-            padding:
-                22px;
+            width:100%;
+            max-width:520px;
+            padding:22px;
             border:
                 1px solid
                 var(--f-border-strong);
-            border-radius:
-                24px;
-            background:
-                #0b0b0b;
+            border-radius:24px;
+            background:#0b0b0b;
             box-shadow:
                 0 -10px 70px
                 rgba(0,0,0,.6);
@@ -894,80 +808,60 @@ function injectStyles() {
         .lg-finance-modal-label {
             color:
                 var(--f-muted);
-            font-size: 8px;
-            font-weight:
-                800;
-            letter-spacing:
-                .18em;
+            font-size:8px;
+            font-weight:800;
+            letter-spacing:.18em;
         }
         .lg-finance-modal-title {
-            margin-top:
-                7px;
-            font-size:
-                23px;
-            font-weight:
-                800;
-            letter-spacing:
-                -.04em;
+            margin-top:7px;
+            font-size:23px;
+            font-weight:800;
+            letter-spacing:-.04em;
         }
         .lg-finance-input {
-            width: 100%;
-            height: 55px;
-            margin-top:
-                20px;
+            width:100%;
+            height:55px;
+            margin-top:20px;
             padding:
                 0
                 16px;
             border:
                 1px solid
                 var(--f-border-strong);
-            border-radius:
-                13px;
-            outline:
-                none;
+            border-radius:13px;
+            outline:none;
             background:
                 rgba(255,255,255,.045);
             color:
                 var(--f-white);
-            font-family:
-                inherit;
-            font-size:
-                19px;
-            font-weight:
-                700;
-            -webkit-appearance:
-                none;
+            font-family:inherit;
+            font-size:19px;
+            font-weight:700;
+            -webkit-appearance:none;
         }
         .lg-finance-modal-buttons {
-            display:
-                grid;
+            display:grid;
             grid-template-columns:
-                1fr 1fr;
-            gap: 9px;
-            margin-top:
-                12px;
+                1fr
+                1fr;
+            gap:9px;
+            margin-top:12px;
         }
         .lg-finance-modal-button {
-            height:
-                46px;
+            height:46px;
             border:
                 1px solid
                 var(--f-border);
-            border-radius:
-                12px;
+            border-radius:12px;
             background:
                 rgba(255,255,255,.035);
             color:
                 var(--f-soft);
-            font-family:
-                inherit;
-            font-size: 8px;
-            font-weight:
-                800;
-            letter-spacing:
-                .1em;
-            cursor:
-                pointer;
+            font-family:inherit;
+            font-size:8px;
+            font-weight:800;
+            letter-spacing:.1em;
+            cursor:pointer;
         }
         .lg-finance-modal-save {
             background:
@@ -977,12 +871,12 @@ function injectStyles() {
             color:
                 var(--f-white);
         }
-        @media (max-width: 500px) {
+        @media (max-width:500px) {
             .lg-finance-card-inner {
-                padding: 19px;
+                padding:19px;
             }
             .lg-finance-accordion-header {
-                padding: 19px;
+                padding:19px;
             }
             .lg-finance-accordion.open
             .lg-finance-accordion-inner {
@@ -1019,11 +913,17 @@ function openModal({
     modal.className =
         "lg-finance-modal active";
     modal.innerHTML = `
-        <div class="lg-finance-modal-panel">
-            <div class="lg-finance-modal-label">
+        <div
+            class="lg-finance-modal-panel"
+        >
+            <div
+                class="lg-finance-modal-label"
+            >
                 ${escapeHTML(label)}
             </div>
-            <div class="lg-finance-modal-title">
+            <div
+                class="lg-finance-modal-title"
+            >
                 ${escapeHTML(title)}
             </div>
             <input
@@ -1035,7 +935,9 @@ function openModal({
                 value="${escapeHTML(value)}"
                 placeholder="${escapeHTML(placeholder)}"
             >
-            <div class="lg-finance-modal-buttons">
+            <div
+                class="lg-finance-modal-buttons"
+            >
                 <button
                     type="button"
                     class="lg-finance-modal-button"
@@ -1045,7 +947,10 @@ function openModal({
                 </button>
                 <button
                     type="button"
-                    class="lg-finance-modal-button lg-finance-modal-save"
+                    class="
+                        lg-finance-modal-button
+                        lg-finance-modal-save
+                    "
                     data-modal-save
                 >
                     SAVE
@@ -1132,11 +1037,17 @@ function openExpenseModal() {
     modal.className =
         "lg-finance-modal active";
     modal.innerHTML = `
-        <div class="lg-finance-modal-panel">
-            <div class="lg-finance-modal-label">
+        <div
+            class="lg-finance-modal-panel"
+        >
+            <div
+                class="lg-finance-modal-label"
+            >
                 REQUIRED EXPENSE
             </div>
-            <div class="lg-finance-modal-title">
+            <div
+                class="lg-finance-modal-title"
+            >
                 Add expense
             </div>
             <input
@@ -1155,7 +1066,9 @@ function openExpenseModal() {
                 step="1"
                 placeholder="Сумма ₽"
             >
-            <div class="lg-finance-modal-buttons">
+            <div
+                class="lg-finance-modal-buttons"
+            >
                 <button
                     type="button"
                     class="lg-finance-modal-button"
@@ -1165,7 +1078,10 @@ function openExpenseModal() {
                 </button>
                 <button
                     type="button"
-                    class="lg-finance-modal-button lg-finance-modal-save"
+                    class="
+                        lg-finance-modal-button
+                        lg-finance-modal-save
+                    "
                     data-modal-save
                 >
                     ADD
@@ -1266,7 +1182,7 @@ function openExpenseModal() {
     );
 }
 /* =========================================================
-   EXPENSES
+   EXPENSE LIST
    ========================================================= */
 function renderExpenses(
     expenses
@@ -1276,7 +1192,9 @@ function renderExpenses(
         expenses.length === 0
     ) {
         return `
-            <div class="lg-finance-empty">
+            <div
+                class="lg-finance-empty"
+            >
                 Пока обязательных трат нет.
             </div>
         `;
@@ -1285,35 +1203,54 @@ function renderExpenses(
         .map(expense => {
             return `
                 <div
-                    class="lg-finance-expense-row"
+                    class="
+                        lg-finance-expense-swipe
+                    "
+                    data-expense-id="${escapeHTML(
+                        expense.id
+                    )}"
                 >
                     <div
-                        class="lg-finance-expense-name"
+                        class="
+                            lg-finance-expense-delete-action
+                        "
+                        data-delete-expense
+                        data-id="${escapeHTML(
+                            expense.id
+                        )}"
                     >
-                        ${escapeHTML(
-                            expense.name
-                        )}
+                        DELETE
                     </div>
                     <div
-                        class="lg-finance-expense-actions"
+                        class="
+                            lg-finance-expense-row
+                        "
+                        data-swipe-row
                     >
                         <div
-                            class="lg-finance-expense-amount"
+                            class="
+                                lg-finance-expense-name
+                            "
                         >
-                            ${money(
-                                expense.amount
+                            ${escapeHTML(
+                                expense.name
                             )}
                         </div>
-                        <button
-                            type="button"
-                            class="lg-finance-delete"
-                            data-delete-expense
-                            data-id="${escapeHTML(
-                                expense.id
-                            )}"
+                        <div
+                            class="
+                                lg-finance-expense-actions
+                            "
                         >
-                            ×
-                        </button>
+                            <div
+                                class="
+                                    lg-finance-expense-amount
+                                "
+                            >
+                                ${money(
+                                    expense.amount
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
             `;
@@ -1328,7 +1265,6 @@ function createAccordion({
     label,
     subtitle,
     amount,
-    number,
     content,
     open = false
 }) {
@@ -1343,33 +1279,45 @@ function createAccordion({
         >
             <button
                 type="button"
-                class="lg-finance-accordion-header"
+                class="
+                    lg-finance-accordion-header
+                "
                 data-action="toggle-accordion"
                 data-accordion-id="${id}"
                 aria-expanded="${open}"
             >
                 <div
-                    class="lg-finance-accordion-title"
+                    class="
+                        lg-finance-accordion-title
+                    "
                 >
                     <div
-                        class="lg-finance-card-label"
+                        class="
+                            lg-finance-card-label
+                        "
                     >
                         ${label}
                     </div>
                     <div
-                        class="lg-finance-card-subtitle"
+                        class="
+                            lg-finance-card-subtitle
+                        "
                     >
                         ${subtitle}
                     </div>
                 </div>
                 <div
-                    class="lg-finance-accordion-value"
+                    class="
+                        lg-finance-accordion-value
+                    "
                 >
                     ${
                         amount !== undefined
                             ? `
                                 <div
-                                    class="lg-finance-accordion-amount"
+                                    class="
+                                        lg-finance-accordion-amount
+                                    "
                                 >
                                     ${amount}
                                 </div>
@@ -1377,20 +1325,28 @@ function createAccordion({
                             : ""
                     }
                     <div
-                        class="lg-finance-accordion-arrow"
+                        class="
+                            lg-finance-accordion-arrow
+                        "
                     >
                         +
                     </div>
                 </div>
             </button>
             <div
-                class="lg-finance-accordion-content"
+                class="
+                    lg-finance-accordion-content
+                "
             >
                 <div
-                    class="lg-finance-accordion-inner"
+                    class="
+                        lg-finance-accordion-inner
+                    "
                 >
                     <div
-                        class="lg-finance-divider"
+                        class="
+                            lg-finance-divider
+                        "
                     ></div>
                     <div
                         style="
@@ -1439,10 +1395,6 @@ function renderFinance(
         goalProgress(
             month
         );
-    const expensePercentage =
-        expensePercent(
-            month
-        );
     const reservePercentage =
         reservePercent(
             month
@@ -1463,19 +1415,23 @@ function renderFinance(
                 reservePercentage
             )
         );
-    /* =====================================================
-       GOAL CONTENT
-       ===================================================== */
+    /* ===============================================
+       GOAL
+       =============================================== */
     const goalContent = `
         <div
             class="lg-finance-goal-row"
             style="margin-top:0;"
         >
             <div>
-                <div class="lg-finance-meta-label">
+                <div
+                    class="lg-finance-meta-label"
+                >
                     TARGET
                 </div>
-                <div class="lg-finance-meta-value">
+                <div
+                    class="lg-finance-meta-value"
+                >
                     ${
                         goal > 0
                             ? money(goal)
@@ -1499,17 +1455,23 @@ function renderFinance(
             class="lg-finance-progress"
         >
             <div
-                class="lg-finance-progress-track"
+                class="
+                    lg-finance-progress-track
+                "
             >
                 <div
-                    class="lg-finance-progress-fill"
+                    class="
+                        lg-finance-progress-fill
+                    "
                     style="
                         width:${visualGoal}%;
                     "
                 ></div>
             </div>
             <div
-                class="lg-finance-progress-bottom"
+                class="
+                    lg-finance-progress-bottom
+                "
             >
                 <span>
                     ${goalPercent}% OF GOAL
@@ -1533,9 +1495,9 @@ function renderFinance(
             </div>
         </div>
     `;
-    /* =====================================================
-       EXPENSE CONTENT
-       ===================================================== */
+    /* ===============================================
+       EXPENSES
+       =============================================== */
     const expenseContent = `
         <div
             class="lg-finance-expense-list"
@@ -1546,20 +1508,24 @@ function renderFinance(
         </div>
         <button
             type="button"
-            class="lg-finance-add-expense"
+            class="
+                lg-finance-add-expense
+            "
             data-action="add-expense"
         >
             <span
-                class="lg-finance-add-expense-plus"
+                class="
+                    lg-finance-add-expense-plus
+                "
             >
                 +
             </span>
             ADD EXPENSE
         </button>
     `;
-    /* =====================================================
-       RESERVE CONTENT
-       ===================================================== */
+    /* ===============================================
+       RESERVE
+       =============================================== */
     const reserveContent = `
         <div
             class="lg-finance-goal-row"
@@ -1572,7 +1538,9 @@ function renderFinance(
                     FROM ACTUAL INCOME
                 </div>
                 <div
-                    class="lg-finance-reserve-percent"
+                    class="
+                        lg-finance-reserve-percent
+                    "
                 >
                     ${reservePercentage}%
                 </div>
@@ -1593,17 +1561,23 @@ function renderFinance(
             class="lg-finance-progress"
         >
             <div
-                class="lg-finance-progress-track"
+                class="
+                    lg-finance-progress-track
+                "
             >
                 <div
-                    class="lg-finance-progress-fill"
+                    class="
+                        lg-finance-progress-fill
+                    "
                     style="
                         width:${visualReserve}%;
                     "
                 ></div>
             </div>
             <div
-                class="lg-finance-progress-bottom"
+                class="
+                    lg-finance-progress-bottom
+                "
             >
                 <span>
                     ${reservePercentage}% OF INCOME
@@ -1611,26 +1585,34 @@ function renderFinance(
             </div>
         </div>
     `;
-    /* =====================================================
-       STABILITY CONTENT
-       ===================================================== */
+    /* ===============================================
+       STABILITY
+       =============================================== */
     const stabilityContent = `
         <div
-            class="lg-finance-stability-content"
+            class="
+                lg-finance-stability-content
+            "
         >
             <div
-                class="lg-finance-stability-score"
+                class="
+                    lg-finance-stability-score
+                "
             >
                 —
             </div>
             <div>
                 <div
-                    class="lg-finance-stability-status"
+                    class="
+                        lg-finance-stability-status
+                    "
                 >
                     ANALYSIS PENDING
                 </div>
                 <div
-                    class="lg-finance-stability-text"
+                    class="
+                        lg-finance-stability-text
+                    "
                 >
                     Алгоритм финансовой стабильности
                     будет добавлен на следующем этапе.
@@ -1638,20 +1620,17 @@ function renderFinance(
             </div>
         </div>
     `;
-    /* =====================================================
-       RENDER
-       ===================================================== */
+    /* ===============================================
+       HTML
+       =============================================== */
     container.innerHTML = `
-        <div class="lg-finance">
+        <div
+            class="lg-finance"
+        >
             <!-- HEADER -->
             <header
                 class="lg-finance-header"
             >
-                <div
-                    class="lg-finance-module"
-                >
-                    LIFE MODULE 1
-                </div>
                 <h1
                     class="lg-finance-title"
                 >
@@ -1663,38 +1642,48 @@ function renderFinance(
                     ${currentMonthLabel()}
                 </div>
             </header>
-            <!-- =========================================
-                 ACTUAL INCOME
-                 ========================================= -->
+            <!-- MONTHLY INCOME -->
             <section
                 class="lg-finance-card"
             >
                 <div
-                    class="lg-finance-card-inner"
+                    class="
+                        lg-finance-card-inner
+                    "
                 >
                     <div
-                        class="lg-finance-card-header"
+                        class="
+                            lg-finance-card-header
+                        "
                     >
                         <div>
                             <div
-                                class="lg-finance-card-label"
+                                class="
+                                    lg-finance-card-label
+                                "
                             >
                                 MONTHLY INCOME
                             </div>
                             <div
-                                class="lg-finance-card-subtitle"
+                                class="
+                                    lg-finance-card-subtitle
+                                "
                             >
                                 Фактически заработано
                             </div>
                         </div>
                         <div
-                            class="lg-finance-card-number"
+                            class="
+                                lg-finance-card-number
+                            "
                         >
                             01
                         </div>
                     </div>
                     <div
-                        class="lg-finance-big-number"
+                        class="
+                            lg-finance-big-number
+                        "
                     >
                         ${money(income)}
                     </div>
@@ -1710,81 +1699,59 @@ function renderFinance(
                     </button>
                 </div>
             </section>
-            <!-- =========================================
-                 MONTHLY GOAL
-                 ========================================= -->
+            <!-- MONTHLY GOAL -->
             ${createAccordion({
-                id:
-                    "goal",
-                label:
-                    "MONTHLY GOAL",
+                id:"goal",
+                label:"MONTHLY GOAL",
                 subtitle:
                     "Цель заработка за месяц",
                 amount:
                     goal > 0
                         ? money(goal)
                         : "—",
-                number:
-                    "02",
                 content:
                     goalContent
             })}
-            <!-- =========================================
-                 REQUIRED EXPENSES
-                 ========================================= -->
+            <!-- REQUIRED EXPENSES -->
             ${createAccordion({
-                id:
-                    "expenses",
-                label:
-                    "REQUIRED EXPENSES",
+                id:"expenses",
+                label:"REQUIRED EXPENSES",
                 subtitle:
                     "Обязательные траты за месяц",
                 amount:
                     money(totalExpenses),
-                number:
-                    "03",
                 content:
                     expenseContent,
                 open:
                     reopenExpenses
             })}
-            <!-- =========================================
-                 FINANCIAL RESERVE
-                 ========================================= -->
+            <!-- FINANCIAL RESERVE -->
             ${createAccordion({
-                id:
-                    "reserve",
-                label:
-                    "FINANCIAL RESERVE",
+                id:"reserve",
+                label:"FINANCIAL RESERVE",
                 subtitle:
                     "Отложено в этом месяце",
                 amount:
                     money(reserve),
-                number:
-                    "04",
                 content:
                     reserveContent
             })}
-            <!-- =========================================
-                 FINANCIAL STABILITY
-                 ========================================= -->
+            <!-- FINANCIAL STABILITY -->
             ${createAccordion({
-                id:
-                    "stability",
-                label:
-                    "FINANCIAL STABILITY",
+                id:"stability",
+                label:"FINANCIAL STABILITY",
                 subtitle:
                     "Оценка финансовой устойчивости",
-                amount:
-                    "—",
-                number:
-                    "05",
+                amount:"—",
                 content:
                     stabilityContent
             })}
         </div>
     `;
     bindEvents(
+        container
+    );
+    initExpenseSwipe(
         container
     );
     saveFinanceData(
@@ -1798,13 +1765,16 @@ function getFinanceContainer() {
     return (
         document.getElementById(
             "finance-container"
-        ) ||
+        )
+        ||
         document.querySelector(
             "[data-section='finance']"
-        ) ||
+        )
+        ||
         document.querySelector(
             ".finance-container"
-        ) ||
+        )
+        ||
         document.querySelector(
             "#finance"
         )
@@ -1868,7 +1838,9 @@ function bindEvents(
                 event.target.closest(
                     "[data-delete-expense]"
                 );
-            if (deleteButton) {
+            if (
+                deleteButton
+            ) {
                 deleteExpense(
                     deleteButton.dataset.id
                 );
@@ -1877,7 +1849,7 @@ function bindEvents(
     );
 }
 /* =========================================================
-   TOGGLE ACCORDION
+   ACCORDION TOGGLE
    ========================================================= */
 function toggleAccordion(
     button
@@ -1903,6 +1875,240 @@ function toggleAccordion(
     button.setAttribute(
         "aria-expanded",
         String(!isOpen)
+    );
+}
+/* =========================================================
+   SWIPE SYSTEM
+   ========================================================= */
+function initExpenseSwipe(
+    container
+) {
+    const rows =
+        container.querySelectorAll(
+            ".lg-finance-expense-swipe"
+        );
+    rows.forEach(
+        swipeContainer => {
+            const row =
+                swipeContainer.querySelector(
+                    "[data-swipe-row]"
+                );
+            if (!row) {
+                return;
+            }
+            let startX = 0;
+            let startY = 0;
+            let currentX = 0;
+            let dragging = false;
+            let moved = false;
+            const DELETE_DISTANCE =
+                70;
+            const MAX_DISTANCE =
+                88;
+            function closeRow() {
+                row.classList.remove(
+                    "swiped"
+                );
+            }
+            function openRow() {
+                row.classList.add(
+                    "swiped"
+                );
+            }
+            function setPosition(
+                distance
+            ) {
+                const value =
+                    Math.max(
+                        0,
+                        Math.min(
+                            MAX_DISTANCE,
+                            distance
+                        )
+                    );
+                row.style.transform =
+                    `translateX(-${value}px)`;
+            }
+            function resetPosition() {
+                row.style.transform = "";
+            }
+            row.addEventListener(
+                "pointerdown",
+                event => {
+                    if (
+                        event.button !== undefined &&
+                        event.button !== 0
+                    ) {
+                        return;
+                    }
+                    startX =
+                        event.clientX;
+                    startY =
+                        event.clientY;
+                    currentX =
+                        startX;
+                    dragging =
+                        true;
+                    moved =
+                        false;
+                    row.style.transition =
+                        "none";
+                    try {
+                        row.setPointerCapture(
+                            event.pointerId
+                        );
+                    } catch (_) {}
+                }
+            );
+            row.addEventListener(
+                "pointermove",
+                event => {
+                    if (!dragging) {
+                        return;
+                    }
+                    currentX =
+                        event.clientX;
+                    const deltaX =
+                        currentX -
+                        startX;
+                    const deltaY =
+                        event.clientY -
+                        startY;
+                    /*
+                     * Ignore vertical scrolling.
+                     */
+                    if (
+                        Math.abs(deltaY) >
+                        Math.abs(deltaX)
+                    ) {
+                        return;
+                    }
+                    if (
+                        Math.abs(deltaX) >
+                        8
+                    ) {
+                        moved =
+                            true;
+                    }
+                    /*
+                     * Swipe LEFT.
+                     */
+                    if (
+                        deltaX < 0
+                    ) {
+                        setPosition(
+                            Math.abs(deltaX)
+                        );
+                    }
+                    /*
+                     * Swipe RIGHT when
+                     * already opened.
+                     */
+                    else if (
+                        row.classList.contains(
+                            "swiped"
+                        )
+                    ) {
+                        setPosition(
+                            MAX_DISTANCE -
+                            Math.min(
+                                MAX_DISTANCE,
+                                deltaX
+                            )
+                        );
+                    }
+                }
+            );
+            row.addEventListener(
+                "pointerup",
+                event => {
+                    if (!dragging) {
+                        return;
+                    }
+                    dragging =
+                        false;
+                    row.style.transition =
+                        "";
+                    const deltaX =
+                        currentX -
+                        startX;
+                    if (
+                        Math.abs(deltaX) <
+                        10
+                    ) {
+                        resetPosition();
+                        return;
+                    }
+                    /*
+                     * LEFT
+                     */
+                    if (
+                        deltaX < 0
+                    ) {
+                        if (
+                            Math.abs(deltaX) >=
+                            DELETE_DISTANCE
+                        ) {
+                            openRow();
+                        } else {
+                            closeRow();
+                        }
+                    }
+                    /*
+                     * RIGHT
+                     */
+                    else {
+                        closeRow();
+                    }
+                    try {
+                        row.releasePointerCapture(
+                            event.pointerId
+                        );
+                    } catch (_) {}
+                }
+            );
+            row.addEventListener(
+                "pointercancel",
+                () => {
+                    dragging =
+                        false;
+                    row.style.transition =
+                        "";
+                    resetPosition();
+                }
+            );
+            /*
+             * If the user taps another
+             * expense row, close this one.
+             */
+            row.addEventListener(
+                "click",
+                event => {
+                    if (moved) {
+                        return;
+                    }
+                    rows.forEach(
+                        other => {
+                            if (
+                                other !==
+                                swipeContainer
+                            ) {
+                                const otherRow =
+                                    other.querySelector(
+                                        "[data-swipe-row]"
+                                    );
+                                if (otherRow) {
+                                    otherRow.classList
+                                        .remove(
+                                            "swiped"
+                                        );
+                                }
+                            }
+                        }
+                    );
+                }
+            );
+        }
     );
 }
 /* =========================================================
@@ -2071,22 +2277,29 @@ function initFinance() {
             error
         );
         container.innerHTML = `
-            <div class="lg-finance">
+            <div
+                class="lg-finance"
+            >
                 <section
                     class="lg-finance-card"
                 >
                     <div
-                        class="lg-finance-card-inner"
+                        class="
+                            lg-finance-card-inner
+                        "
                     >
                         <div
-                            class="lg-finance-card-label"
+                            class="
+                                lg-finance-card-label
+                            "
                         >
                             FINANCE SYSTEM
                         </div>
                         <div
                             style="
                                 margin-top:12px;
-                                color:rgba(255,255,255,.6);
+                                color:
+                                rgba(255,255,255,.6);
                                 font-size:11px;
                             "
                         >
