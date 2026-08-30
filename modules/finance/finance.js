@@ -1,5248 +1,1511 @@
 /* =========================================================
-   LIFE GAME — FINANCE MODULE
-   Version 1
+   LIFE GAME 2.0
+   FINANCE MODULE
+   ---------------------------------------------------------
+   Financial tracking and Financial Stability analysis.
+   IMPORTANT:
+   This module contains NO XP.
+   This module contains NO LEVELS.
+   This module contains NO GAMIFICATION.
+   The Finance module measures the user's actual
+   financial condition and its dynamics.
    ========================================================= */
-
-import {
-    getSection,
-    updateSection
-} from "../../js/storage.js";
-
-
-const FINANCE_VERSION = 1;
-
-
 /* =========================================================
-   HELPERS
+   STORAGE
    ========================================================= */
-
-function currentMonthKey() {
-
-    const now = new Date();
-
-    return `${now.getFullYear()}-${String(
-        now.getMonth() + 1
-    ).padStart(2, "0")}`;
-}
-
-
-function currentDateKey() {
-
-    const now = new Date();
-
-    return `${now.getFullYear()}-${String(
-        now.getMonth() + 1
-    ).padStart(2, "0")}-${String(
-        now.getDate()
-    ).padStart(2, "0")}`;
-}
-
-
-function currentMonthLabel() {
-
-    const now = new Date();
-
-    return new Intl.DateTimeFormat(
-        "en-US",
-        {
-            month: "long",
-            year: "numeric"
+const FINANCE_STORAGE_KEY = "lifegame_finance_v1";
+/* =========================================================
+   DEFAULT STATE
+   ========================================================= */
+const defaultFinanceState = {
+    liquidAssets: 0,
+    essentialExpenses: 0,
+    currentIncome: 0,
+    financialObligations: 0,
+    incomeHistory: []
+};
+/* =========================================================
+   STATE
+   ========================================================= */
+let financeState = loadFinanceState();
+/* =========================================================
+   LOAD STATE
+   ========================================================= */
+function loadFinanceState() {
+    try {
+        const saved =
+            localStorage.getItem(
+                FINANCE_STORAGE_KEY
+            );
+        if (!saved) {
+            return {
+                ...defaultFinanceState
+            };
         }
-    ).format(now).toUpperCase();
+        const parsed =
+            JSON.parse(saved);
+        return {
+            ...defaultFinanceState,
+            ...parsed,
+            incomeHistory:
+                Array.isArray(parsed.incomeHistory)
+                    ? parsed.incomeHistory
+                    : []
+        };
+    } catch (error) {
+        console.error(
+            "LIFE GAME: Не удалось загрузить финансовые данные.",
+            error
+        );
+        return {
+            ...defaultFinanceState
+        };
+    }
 }
-
-
-function currentFinanceDate() {
-
-    const now = new Date();
-
-    const month =
-        new Intl.DateTimeFormat(
-            "en-US",
-            {
-                month: "long"
-            }
-        )
-        .format(now)
-        .toUpperCase();
-
-    const day =
-        now.getDate();
-
-    const year =
-        now.getFullYear();
-
-    return `${month} ${day} ${year}`;
+/* =========================================================
+   SAVE STATE
+   ========================================================= */
+function saveFinanceState() {
+    try {
+        localStorage.setItem(
+            FINANCE_STORAGE_KEY,
+            JSON.stringify(financeState)
+        );
+    } catch (error) {
+        console.error(
+            "LIFE GAME: Не удалось сохранить финансовые данные.",
+            error
+        );
+    }
 }
-
-
-function money(value) {
-
+/* =========================================================
+   NUMBER HELPERS
+   ========================================================= */
+function parseMoney(value) {
+    if (
+        value === null ||
+        value === undefined
+    ) {
+        return 0;
+    }
+    const normalized =
+        String(value)
+            .replace(/\s/g, "")
+            .replace(",", ".")
+            .replace(/[^\d.-]/g, "");
+    const number =
+        Number(normalized);
+    if (!Number.isFinite(number)) {
+        return 0;
+    }
+    return Math.max(0, number);
+}
+function formatMoney(value) {
     const number =
         Number(value) || 0;
-
     return new Intl.NumberFormat(
         "ru-RU",
         {
             maximumFractionDigits: 0
         }
-    ).format(
-        Math.max(0, number)
-    ) + " ₽";
+    ).format(number);
 }
-
-
-function numberValue(value) {
-
-    if (
-        typeof value === "number"
-    ) {
-        return Math.max(0, value);
+function formatPercent(value) {
+    if (!Number.isFinite(value)) {
+        return "—";
     }
-
-    const normalized =
-        String(value || "")
-            .replace(/\s/g, "")
-            .replace(",", ".")
-            .replace(/[^\d.]/g, "");
-
-    const result =
-        Number(normalized);
-
-    return Number.isFinite(result)
-        ? Math.max(0, result)
-        : 0;
-}
-
-
-function percentage(value, base) {
-
-    const v =
-        numberValue(value);
-
-    const b =
-        numberValue(base);
-
-    if (b <= 0) {
-        return 0;
-    }
-
-    return Math.round(
-        (v / b) * 100
-    );
-}
-
-
-function escapeHTML(value) {
-
-    return String(value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
-
-
-function createId() {
-
     return (
-        Date.now().toString(36) +
-        Math.random()
-            .toString(36)
-            .slice(2, 9)
+        (value * 100)
+            .toFixed(1)
+            .replace(".", ",")
+        + "%"
     );
 }
-
-
 /* =========================================================
-   DATA
+   SCORE CONFIGURATION
    ========================================================= */
-
-function defaultMonth() {
-
-    return {
-        income: 0,
-        incomeGoal: 0,
-        expenses: [],
-        reserve: 0,
-        dailySnapshots: {}
-    };
-}
-
-
-function getFinanceData() {
-
-    const section =
-        getSection("finance") || {};
-
-    const stored =
-        section.data || {};
-
-    if (
-        !stored.months ||
-        typeof stored.months !== "object"
-    ) {
-        stored.months = {};
+const FINANCIAL_STABILITY_CONFIG = {
+    weights: {
+        liquidity: 0.30,
+        cashFlow: 0.25,
+        debt: 0.20,
+        incomeStability: 0.15,
+        netWorth: 0.10
     }
-
-    const monthKey =
-        currentMonthKey();
-
-    if (
-        !stored.months[monthKey]
-    ) {
-
-        stored.months[monthKey] =
-            defaultMonth();
-
-    }
-
-    const month =
-        stored.months[monthKey];
-
-    if (
-        !Array.isArray(
-            month.expenses
-        )
-    ) {
-        month.expenses = [];
-    }
-
-    if (
-        !month.dailySnapshots ||
-        typeof month.dailySnapshots !== "object"
-    ) {
-        month.dailySnapshots = {};
-    }
-
-    stored.currentMonth =
-        monthKey;
-
-    stored.version =
-        FINANCE_VERSION;
-
-    return {
-        data: stored,
-        month
-    };
-}
-
-
+};
 /* =========================================================
-   DAILY SNAPSHOT
+   LINEAR INTERPOLATION
    ========================================================= */
-
-function createDailySnapshot(month) {
-
-    return {
-        income:
-            numberValue(month.income),
-
-        expenses:
-            expensesTotal(month),
-
-        reserve:
-            numberValue(month.reserve),
-
-        incomeGoal:
-            numberValue(month.incomeGoal),
-
-        stabilityScore:
-            null
-    };
-}
-
-
-function saveDailySnapshot(
-    data,
-    month
+function interpolateScore(
+    value,
+    scale
 ) {
-
-    const dateKey =
-        currentDateKey();
-
-    if (
-        !month.dailySnapshots ||
-        typeof month.dailySnapshots !== "object"
-    ) {
-        month.dailySnapshots = {};
+    if (!Number.isFinite(value)) {
+        return null;
     }
-
-    month.dailySnapshots[dateKey] =
-        createDailySnapshot(month);
-
-    data.months[
-        data.currentMonth
-    ] = month;
-}
-
-
-function saveFinanceData(data) {
-
-    updateSection(
-        "finance",
-        {
-            data
-        }
-    );
-}
-
-
-/* =========================================================
-   CALCULATIONS
-   ========================================================= */
-
-function expensesTotal(month) {
-
-    if (
-        !Array.isArray(
-            month.expenses
-        )
-    ) {
-        return 0;
-    }
-
-    return month.expenses.reduce(
-        (sum, expense) => {
-
-            return sum +
-                numberValue(
-                    expense.amount
-                );
-
-        },
-        0
-    );
-}
-
-
-function goalProgress(month) {
-
-    return percentage(
-        month.income,
-        month.incomeGoal
-    );
-}
-
-
-function expensePercent(month) {
-
-    return percentage(
-        expensesTotal(month),
-        month.income
-    );
-}
-
-
-function reservePercent(month) {
-
-    return percentage(
-        month.reserve,
-        month.income
-    );
-}
-
-
-/* =========================================================
-   STATISTICS STATE
-   ========================================================= */
-
-let statisticsMode =
-    "week";
-
-let statisticsSortMode =
-    "best";
-
-
-function nextStatisticsMode() {
-
-    if (
-        statisticsMode === "week"
-    ) {
-
-        statisticsMode =
-            "month";
-
-    } else if (
-        statisticsMode === "month"
-    ) {
-
-        statisticsMode =
-            "year";
-
-    } else {
-
-        statisticsMode =
-            "week";
-
-    }
-
-    return statisticsMode;
-}
-
-
-function nextStatisticsSortMode() {
-
-    if (
-        statisticsSortMode === "best"
-    ) {
-
-        statisticsSortMode =
-            "worst";
-
-    } else {
-
-        statisticsSortMode =
-            "best";
-
-    }
-
-    return statisticsSortMode;
-}
-
-
-/* =========================================================
-   STATISTICS DATA
-   ========================================================= */
-
-function getAllMonths(
-    data
-) {
-
-    if (
-        !data ||
-        !data.months
-    ) {
-        return [];
-    }
-
-    return Object.keys(
-        data.months
-    )
-        .sort()
-        .map(
-            key => ({
-                key,
-                month:
-                    data.months[key]
-            })
-        );
-}
-
-
-function getLastSevenDays(
-    month
-) {
-
-    const result = [];
-
-    const today =
-        new Date();
-
-    for (
-        let i = 6;
-        i >= 0;
-        i--
-    ) {
-
-        const date =
-            new Date(
-                today
+    const points =
+        [...scale]
+            .sort(
+                (a, b) =>
+                    a.value - b.value
             );
-
-        date.setDate(
-            today.getDate() - i
-        );
-
-        const key =
-            `${date.getFullYear()}-${String(
-                date.getMonth() + 1
-            ).padStart(2, "0")}-${String(
-                date.getDate()
-            ).padStart(2, "0")}`;
-
-        const snapshot =
-            month.dailySnapshots &&
-            month.dailySnapshots[key]
-                ? month.dailySnapshots[key]
-                : null;
-
-        result.push({
-
-            key,
-
-            label:
-                new Intl.DateTimeFormat(
-                    "en-US",
-                    {
-                        weekday: "short",
-                        day: "numeric"
-                    }
-                )
-                .format(date)
-                .toUpperCase(),
-
-            income:
-                snapshot
-                    ? numberValue(snapshot.income)
-                    : 0,
-
-            expenses:
-                snapshot
-                    ? numberValue(snapshot.expenses)
-                    : 0,
-
-            reserve:
-                snapshot
-                    ? numberValue(snapshot.reserve)
-                    : 0,
-
-            stability:
-                snapshot
-                    ? snapshot.stabilityScore
-                    : null
-
-        });
-
-    }
-
-    return result;
-}
-
-
-function getCurrentMonthDays(
-    month
-) {
-
-    const result = [];
-
-    const now =
-        new Date();
-
-    const year =
-        now.getFullYear();
-
-    const monthIndex =
-        now.getMonth();
-
-    const daysInMonth =
-        new Date(
-            year,
-            monthIndex + 1,
-            0
-        ).getDate();
-
-    for (
-        let day = 1;
-        day <= daysInMonth;
-        day++
-    ) {
-
-        const key =
-            `${year}-${String(
-                monthIndex + 1
-            ).padStart(2, "0")}-${String(
-                day
-            ).padStart(2, "0")}`;
-
-        const snapshot =
-            month.dailySnapshots &&
-            month.dailySnapshots[key]
-                ? month.dailySnapshots[key]
-                : null;
-
-        result.push({
-
-            key,
-
-            label:
-                String(day),
-
-            income:
-                snapshot
-                    ? numberValue(snapshot.income)
-                    : 0,
-
-            expenses:
-                snapshot
-                    ? numberValue(snapshot.expenses)
-                    : 0,
-
-            reserve:
-                snapshot
-                    ? numberValue(snapshot.reserve)
-                    : 0,
-
-            stability:
-                snapshot
-                    ? snapshot.stabilityScore
-                    : null
-
-        });
-
-    }
-
-    return result;
-}
-
-
-function getYearData(
-    data
-) {
-
-    const year =
-        new Date()
-            .getFullYear();
-
-    const result = [];
-
-    for (
-        let monthIndex = 0;
-        monthIndex < 12;
-        monthIndex++
-    ) {
-
-        const key =
-            `${year}-${String(
-                monthIndex + 1
-            ).padStart(2, "0")}`;
-
-        const month =
-            data.months &&
-            data.months[key]
-                ? data.months[key]
-                : null;
-
-        result.push({
-
-            key,
-
-            label:
-                new Intl.DateTimeFormat(
-                    "en-US",
-                    {
-                        month: "short"
-                    }
-                )
-                .format(
-                    new Date(
-                        year,
-                        monthIndex,
-                        1
-                    )
-                )
-                .toUpperCase(),
-
-            income:
-                month
-                    ? numberValue(
-                        month.income
-                    )
-                    : 0,
-
-            expenses:
-                month
-                    ? expensesTotal(month)
-                    : 0,
-
-            reserve:
-                month
-                    ? numberValue(
-                        month.reserve
-                    )
-                    : 0,
-
-            stability:
-                null
-
-        });
-
-    }
-
-    return result;
-}
-
-
-/* =========================================================
-   STATISTICS SCORE
-   ========================================================= */
-
-function statisticsScore(
-    item
-) {
-
-    /*
-     * Пока Financial Stability
-     * ещё не разработан.
-     *
-     * Поэтому возвращаем null.
-     *
-     * Позже здесь будет:
-     *
-     * item.stability
-     *
-     * и именно он будет определять
-     * BEST DAY / MONTH / YEAR.
-     */
-
     if (
-        item &&
-        item.stability !== null &&
-        item.stability !== undefined
+        value <=
+        points[0].value
     ) {
-
-        return numberValue(
-            item.stability
-        );
-
+        return points[0].score;
     }
-
+    if (
+        value >=
+        points[points.length - 1].value
+    ) {
+        return points[
+            points.length - 1
+        ].score;
+    }
+    for (
+        let i = 0;
+        i < points.length - 1;
+        i++
+    ) {
+        const current =
+            points[i];
+        const next =
+            points[i + 1];
+        if (
+            value >= current.value &&
+            value <= next.value
+        ) {
+            const ratio =
+                (
+                    value -
+                    current.value
+                ) /
+                (
+                    next.value -
+                    current.value
+                );
+            return (
+                current.score +
+                (
+                    next.score -
+                    current.score
+                ) *
+                ratio
+            );
+        }
+    }
     return null;
 }
-
-
-function findBestItem(
-    items
-) {
-
-    const scored =
-        items
-            .map(
-                item => ({
-                    item,
-                    score:
-                        statisticsScore(item)
-                })
-            )
-            .filter(
-                entry =>
-                    entry.score !== null
-            );
-
-    if (
-        scored.length === 0
-    ) {
-
-        return null;
-
-    }
-
-    return scored.reduce(
-        (best, current) => {
-
-            return current.score >
-                best.score
-                ? current
-                : best;
-
-        }
-    ).item;
-}
-
-
-function findWorstItem(
-    items
-) {
-
-    const scored =
-        items
-            .map(
-                item => ({
-                    item,
-                    score:
-                        statisticsScore(item)
-                })
-            )
-            .filter(
-                entry =>
-                    entry.score !== null
-            );
-
-    if (
-        scored.length === 0
-    ) {
-
-        return null;
-
-    }
-
-    return scored.reduce(
-        (worst, current) => {
-
-            return current.score <
-                worst.score
-                ? current
-                : worst;
-
-        }
-    ).item;
-}
-
-
 /* =========================================================
-   SVG CHART
+   1. LIQUIDITY SCORE
+   ---------------------------------------------------------
+   Liquid Assets /
+   Essential Monthly Expenses
    ========================================================= */
-
-function buildChart({
-    items,
-    field,
-    label,
-    formatter = money
-}) {
-
-    const width =
-        700;
-
-    const height =
-        220;
-
-    const paddingLeft =
-        38;
-
-    const paddingRight =
-        16;
-
-    const paddingTop =
-        20;
-
-    const paddingBottom =
-        36;
-
-    const chartWidth =
-        width -
-        paddingLeft -
-        paddingRight;
-
-    const chartHeight =
-        height -
-        paddingTop -
-        paddingBottom;
-
-
+function calculateLiquidityScore() {
+    const liquidAssets =
+        parseMoney(
+            financeState.liquidAssets
+        );
+    const essentialExpenses =
+        parseMoney(
+            financeState.essentialExpenses
+        );
+    if (
+        essentialExpenses <= 0
+    ) {
+        return null;
+    }
+    const coverage =
+        liquidAssets /
+        essentialExpenses;
+    if (coverage < 1) {
+        return 0;
+    }
+    return Math.max(
+        0,
+        Math.min(
+            100,
+            interpolateScore(
+                coverage,
+                [
+                    {
+                        value: 1,
+                        score: 20
+                    },
+                    {
+                        value: 2,
+                        score: 40
+                    },
+                    {
+                        value: 3,
+                        score: 60
+                    },
+                    {
+                        value: 6,
+                        score: 90
+                    },
+                    {
+                        value: 9,
+                        score: 100
+                    }
+                ]
+            )
+        )
+    );
+}
+/* =========================================================
+   2. CASH FLOW SCORE
+   ---------------------------------------------------------
+   (Income - Expenses) / Income
+   ========================================================= */
+function calculateCashFlowScore() {
+    const income =
+        parseMoney(
+            financeState.currentIncome
+        );
+    const expenses =
+        parseMoney(
+            financeState.essentialExpenses
+        );
+    if (income <= 0) {
+        return null;
+    }
+    const savingsRate =
+        (
+            income -
+            expenses
+        ) /
+        income;
+    if (savingsRate <= 0) {
+        return 0;
+    }
+    return Math.max(
+        0,
+        Math.min(
+            100,
+            interpolateScore(
+                savingsRate,
+                [
+                    {
+                        value: 0.00,
+                        score: 0
+                    },
+                    {
+                        value: 0.05,
+                        score: 25
+                    },
+                    {
+                        value: 0.10,
+                        score: 40
+                    },
+                    {
+                        value: 0.20,
+                        score: 60
+                    },
+                    {
+                        value: 0.30,
+                        score: 80
+                    },
+                    {
+                        value: 0.40,
+                        score: 100
+                    }
+                ]
+            )
+        )
+    );
+}
+/* =========================================================
+   3. DEBT SCORE
+   ---------------------------------------------------------
+   Financial Obligations /
+   Monthly Income
+   IMPORTANT:
+   The entered "financial obligations" are treated as
+   monthly debt payments for the current version.
+   ========================================================= */
+function calculateDebtScore() {
+    const obligations =
+        parseMoney(
+            financeState.financialObligations
+        );
+    const income =
+        parseMoney(
+            financeState.currentIncome
+        );
+    if (income <= 0) {
+        return null;
+    }
+    const debtServiceRatio =
+        obligations /
+        income;
+    if (
+        debtServiceRatio >= 0.50
+    ) {
+        return 0;
+    }
+    return Math.max(
+        0,
+        Math.min(
+            100,
+            interpolateScore(
+                debtServiceRatio,
+                [
+                    {
+                        value: 0.00,
+                        score: 100
+                    },
+                    {
+                        value: 0.10,
+                        score: 90
+                    },
+                    {
+                        value: 0.20,
+                        score: 75
+                    },
+                    {
+                        value: 0.30,
+                        score: 55
+                    },
+                    {
+                        value: 0.40,
+                        score: 30
+                    },
+                    {
+                        value: 0.50,
+                        score: 0
+                    }
+                ]
+            )
+        )
+    );
+}
+/* =========================================================
+   4. INCOME STABILITY SCORE
+   ---------------------------------------------------------
+   Coefficient of Variation:
+   Standard Deviation /
+   Average Monthly Income
+   Minimum required history:
+   3 months.
+   ========================================================= */
+function calculateAverage(values) {
+    if (!values.length) {
+        return null;
+    }
+    return (
+        values.reduce(
+            (sum, value) =>
+                sum + value,
+            0
+        ) /
+        values.length
+    );
+}
+function calculateStandardDeviation(
+    values
+) {
+    if (
+        values.length < 2
+    ) {
+        return null;
+    }
+    const average =
+        calculateAverage(
+            values
+        );
+    const variance =
+        values.reduce(
+            (sum, value) =>
+                sum +
+                Math.pow(
+                    value - average,
+                    2
+                ),
+            0
+        ) /
+        values.length;
+    return Math.sqrt(
+        variance
+    );
+}
+function calculateIncomeStabilityScore() {
     const values =
-        items.map(
-            item =>
-                numberValue(
-                    item[field]
+        financeState.incomeHistory
+            .map(
+                item =>
+                    parseMoney(
+                        item.amount
+                    )
+            )
+            .filter(
+                value =>
+                    value > 0
+            );
+    if (
+        values.length < 3
+    ) {
+        return null;
+    }
+    const average =
+        calculateAverage(
+            values
+        );
+    const standardDeviation =
+        calculateStandardDeviation(
+            values
+        );
+    if (
+        !average ||
+        standardDeviation === null
+    ) {
+        return null;
+    }
+    const coefficientOfVariation =
+        standardDeviation /
+        average;
+    if (
+        coefficientOfVariation >=
+        0.50
+    ) {
+        return 0;
+    }
+    if (
+        coefficientOfVariation <=
+        0.05
+    ) {
+        return 100;
+    }
+    return Math.max(
+        0,
+        Math.min(
+            100,
+            interpolateScore(
+                coefficientOfVariation,
+                [
+                    {
+                        value: 0.05,
+                        score: 100
+                    },
+                    {
+                        value: 0.10,
+                        score: 90
+                    },
+                    {
+                        value: 0.20,
+                        score: 75
+                    },
+                    {
+                        value: 0.30,
+                        score: 55
+                    },
+                    {
+                        value: 0.40,
+                        score: 30
+                    },
+                    {
+                        value: 0.50,
+                        score: 0
+                    }
+                ]
+            )
+        )
+    );
+}
+/* =========================================================
+   5. NET WORTH SCORE
+   ---------------------------------------------------------
+   Current version:
+   Net Worth =
+   Liquid Assets - Financial Obligations
+   This is deliberately conservative.
+   Later the module can add:
+   - property
+   - investments
+   - vehicles
+   - business assets
+   - other assets
+   ========================================================= */
+function calculateNetWorthScore() {
+    const liquidAssets =
+        parseMoney(
+            financeState.liquidAssets
+        );
+    const liabilities =
+        parseMoney(
+            financeState.financialObligations
+        );
+    const income =
+        parseMoney(
+            financeState.currentIncome
+        );
+    if (income <= 0) {
+        return null;
+    }
+    const netWorth =
+        liquidAssets -
+        liabilities;
+    const annualIncome =
+        income * 12;
+    if (
+        annualIncome <= 0
+    ) {
+        return null;
+    }
+    const coverage =
+        netWorth /
+        annualIncome;
+    if (coverage <= 0) {
+        return 0;
+    }
+    return Math.max(
+        0,
+        Math.min(
+            100,
+            interpolateScore(
+                coverage,
+                [
+                    {
+                        value: 0.00,
+                        score: 0
+                    },
+                    {
+                        value: 0.25,
+                        score: 25
+                    },
+                    {
+                        value: 0.50,
+                        score: 50
+                    },
+                    {
+                        value: 1.00,
+                        score: 70
+                    },
+                    {
+                        value: 2.00,
+                        score: 85
+                    },
+                    {
+                        value: 3.00,
+                        score: 100
+                    }
+                ]
+            )
+        )
+    );
+}
+/* =========================================================
+   FINANCIAL STABILITY
+   ========================================================= */
+function calculateFinancialStability() {
+    const components = {
+        liquidity:
+            calculateLiquidityScore(),
+        cashFlow:
+            calculateCashFlowScore(),
+        debt:
+            calculateDebtScore(),
+        incomeStability:
+            calculateIncomeStabilityScore(),
+        netWorth:
+            calculateNetWorthScore()
+    };
+    const weights =
+        FINANCIAL_STABILITY_CONFIG.weights;
+    let weightedScore = 0;
+    let availableWeight = 0;
+    Object.keys(
+        components
+    ).forEach(
+        key => {
+            const score =
+                components[key];
+            if (
+                Number.isFinite(score)
+            ) {
+                weightedScore +=
+                    score *
+                    weights[key];
+                availableWeight +=
+                    weights[key];
+            }
+        }
+    );
+    if (
+        availableWeight <= 0
+    ) {
+        return {
+            score: null,
+            components
+        };
+    }
+    const score =
+        weightedScore /
+        availableWeight;
+    return {
+        score:
+            Math.round(
+                Math.max(
+                    0,
+                    Math.min(
+                        100,
+                        score
+                    )
                 )
-        );
-
-
-    const maxValue =
-        Math.max(
-            1,
-            ...values
-        );
-
-
-    const points =
-        values.map(
-            (value, index) => {
-
-                const x =
-                    items.length <= 1
-                        ? paddingLeft +
-                          chartWidth / 2
-                        : paddingLeft +
-                          (
-                              index /
-                              (
-                                  items.length -
-                                  1
-                              )
-                          ) *
-                          chartWidth;
-
-                const y =
-                    paddingTop +
-                    chartHeight -
-                    (
-                        value /
-                        maxValue
-                    ) *
-                    chartHeight;
-
-                return {
-                    x,
-                    y,
-                    value,
-                    item:
-                        items[index]
-                };
-
-            }
-        );
-
-
-    const line =
-        points.length
-            ? points
-                .map(
-                    (point, index) =>
-                        `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`
-                )
-                .join(" ")
-            : "";
-
-
-    const area =
-        points.length
-            ? `
-                M ${points[0].x} ${paddingTop + chartHeight}
-                ${points
-                    .map(
-                        point =>
-                            `L ${point.x} ${point.y}`
-                    )
-                    .join(" ")}
-                L ${points[points.length - 1].x}
-                  ${paddingTop + chartHeight}
-                Z
-            `
-            : "";
-
-
-    const grid =
-        [0, .25, .5, .75, 1]
-            .map(
-                ratio => {
-
-                    const y =
-                        paddingTop +
-                        chartHeight -
-                        chartHeight *
-                        ratio;
-
-                    return `
-                        <line
-                            x1="${paddingLeft}"
-                            y1="${y}"
-                            x2="${width - paddingRight}"
-                            y2="${y}"
-                            class="lg-finance-chart-grid"
-                        />
-                    `;
-
-                }
-            )
-            .join("");
-
-
-    const labels =
-        points
-            .map(
-                point => {
-
-                    return `
-                        <text
-                            x="${point.x}"
-                            y="${height - 13}"
-                            class="lg-finance-chart-label"
-                            text-anchor="middle"
-                        >
-                            ${escapeHTML(
-                                point.item.label
-                            )}
-                        </text>
-                    `;
-
-                }
-            )
-            .join("");
-
-
-    const dots =
-        points
-            .map(
-                point => {
-
-                    return `
-                        <circle
-                            cx="${point.x}"
-                            cy="${point.y}"
-                            r="3.5"
-                            class="lg-finance-chart-dot"
-                        >
-                            <title>
-                                ${escapeHTML(
-                                    point.item.label
-                                )}
-                                —
-                                ${escapeHTML(
-                                    formatter(
-                                        point.value
-                                    )
-                                )}
-                            </title>
-                        </circle>
-                    `;
-
-                }
-            )
-            .join("");
-
-
-    return `
-
-        <div
-            class="lg-finance-chart-block"
-        >
-
-            <div
-                class="lg-finance-chart-header"
-            >
-
-                <div
-                    class="lg-finance-chart-name"
-                >
-                    ${escapeHTML(label)}
-                </div>
-
-                <div
-                    class="lg-finance-chart-total"
-                >
-                    ${formatter(
-                        values.reduce(
-                            (sum, value) =>
-                                sum + value,
-                            0
-                        )
-                    )}
-                </div>
-
-            </div>
-
-            <div
-                class="lg-finance-chart-wrap"
-            >
-
-                <svg
-                    class="lg-finance-chart"
-                    viewBox="
-                        0
-                        0
-                        ${width}
-                        ${height}
-                    "
-                    preserveAspectRatio="none"
-                >
-
-                    ${grid}
-
-                    <path
-                        d="${area}"
-                        class="lg-finance-chart-area"
-                    />
-
-                    <path
-                        d="${line}"
-                        class="lg-finance-chart-line"
-                    />
-
-                    ${dots}
-
-                    ${labels}
-
-                </svg>
-
-            </div>
-
-        </div>
-
-    `;
+            ),
+        components
+    };
 }
-
-
 /* =========================================================
-   STATISTICS CONTENT
+   FINANCIAL STABILITY STATUS
    ========================================================= */
-
-function renderStatisticsContent(
-    data,
-    month
+function getFinancialStabilityStatus(
+    score
 ) {
-
-    let items;
-
-    let periodLabel;
-
     if (
-        statisticsMode === "week"
+        !Number.isFinite(score)
     ) {
-
-        items =
-            getLastSevenDays(
-                month
-            );
-
-        periodLabel =
-            "LAST 7 DAYS";
-
-    } else if (
-        statisticsMode === "month"
-    ) {
-
-        items =
-            getCurrentMonthDays(
-                month
-            );
-
-        periodLabel =
-            currentMonthLabel();
-
-    } else {
-
-        items =
-            getYearData(
-                data
-            );
-
-        periodLabel =
-            `${new Date().getFullYear()}`;
-
+        return {
+            key:
+                "insufficient-data",
+            label:
+                "Недостаточно данных"
+        };
     }
-
-
-    let bestItem =
-        statisticsSortMode === "best"
-            ? findBestItem(items)
-            : findWorstItem(items);
-
-
-    const sortLabel =
-        statisticsSortMode === "best"
-            ? "BEST"
-            : "LOWEST";
-
-
-    let sortValue =
-        "STABILITY PENDING";
-
-
-    if (
-        bestItem
-    ) {
-
-        sortValue =
-            `${bestItem.label} · ${statisticsScore(bestItem)}`;
-
+    if (score < 40) {
+        return {
+            key:
+                "vulnerable",
+            label:
+                "Уязвимое положение"
+        };
     }
-
-
-    return `
-
-        <div
-            class="lg-finance-statistics-controls"
-        >
-
-            <button
-                type="button"
-                class="
-                    lg-finance-statistics-period
-                "
-                data-action="statistics-period"
-            >
-
-                <span>
-                    ${escapeHTML(periodLabel)}
-                </span>
-
-                <span
-                    class="
-                        lg-finance-statistics-cycle
-                    "
-                >
-                    TAP TO CHANGE
-                </span>
-
-            </button>
-
-
-            <button
-                type="button"
-                class="
-                    lg-finance-button
-                    lg-finance-sort-button
-                "
-                data-action="statistics-sort"
-            >
-                ${sortLabel}
-            </button>
-
-        </div>
-
-
-        <div
-            class="
-                lg-finance-statistics-status
-            "
-        >
-
-            <div>
-
-                <span
-                    class="
-                        lg-finance-statistics-status-label
-                    "
-                >
-                    ${sortLabel}
-                </span>
-
-                <span
-                    class="
-                        lg-finance-statistics-status-value
-                    "
-                >
-                    ${escapeHTML(sortValue)}
-                </span>
-
-            </div>
-
-            <div
-                class="
-                    lg-finance-statistics-status-note
-                "
-            >
-                SORTING WILL USE FINANCIAL
-                STABILITY SCORE
-            </div>
-
-        </div>
-
-
-        <div
-            class="lg-finance-statistics-charts"
-        >
-
-            ${buildChart({
-
-                items,
-
-                field:
-                    "income",
-
-                label:
-                    "INCOME"
-
-            })}
-
-
-            ${buildChart({
-
-                items,
-
-                field:
-                    "expenses",
-
-                label:
-                    "REQUIRED EXPENSES"
-
-            })}
-
-
-            ${buildChart({
-
-                items,
-
-                field:
-                    "reserve",
-
-                label:
-                    "RESERVE"
-
-            })}
-
-        </div>
-
-
-        <div
-            class="
-                lg-finance-statistics-footer
-            "
-        >
-
-            DATA SOURCE · FINANCE MODULE
-
-        </div>
-
-    `;
+    if (score < 60) {
+        return {
+            key:
+                "developing",
+            label:
+                "Требует внимания"
+        };
+    }
+    if (score < 80) {
+        return {
+            key:
+                "stable",
+            label:
+                "Стабильное положение"
+        };
+    }
+    if (score < 90) {
+        return {
+            key:
+                "strong",
+            label:
+                "Сильное положение"
+        };
+    }
+    return {
+        key:
+            "resilient",
+        label:
+            "Высокая устойчивость"
+    };
 }
-
-
 /* =========================================================
-   STYLES
+   INCOME STATISTICS
    ========================================================= */
-
-function injectStyles() {
-
-    if (
-        document.getElementById(
-            "life-finance-runtime-styles"
-        )
-    ) {
-        return;
-    }
-
-    const style =
-        document.createElement("style");
-
-    style.id =
-        "life-finance-runtime-styles";
-
-    style.textContent = `
-
-        /* ===============================================
-           ROOT
-           =============================================== */
-
-        .lg-finance {
-
-            --f-surface:
-                rgba(255,255,255,.035);
-
-            --f-border:
-                rgba(255,255,255,.085);
-
-            --f-border-strong:
-                rgba(255,255,255,.15);
-
-            --f-white:
-                rgba(255,255,255,.96);
-
-            --f-soft:
-                rgba(255,255,255,.72);
-
-            --f-muted:
-                rgba(255,255,255,.42);
-
-            --f-dim:
-                rgba(255,255,255,.24);
-
-            width:100%;
-
-            color:
-                var(--f-white);
-
-            font-family:
-                -apple-system,
-                BlinkMacSystemFont,
-                "SF Pro Display",
-                "SF Pro Text",
-                Inter,
-                Arial,
-                sans-serif;
-
-            -webkit-font-smoothing:
-                antialiased;
-        }
-
-
-        /* ===============================================
-           HEADER
-           =============================================== */
-
-        .lg-finance-header {
-
-            padding:
-                4px
-                2px
-                22px;
-
-        }
-
-
-        .lg-finance-title {
-
-            margin:0;
-
-            font-size:
-                clamp(
-                    38px,
-                    10vw,
-                    52px
-                );
-
-            line-height:.9;
-
-            font-weight:850;
-
-            letter-spacing:-.07em;
-
-        }
-
-
-        .lg-finance-date {
-
-            display:block;
-
-            margin-top:13px;
-
-            color:
-                var(--f-muted);
-
-            font-size:11px;
-
-            line-height:1;
-
-            font-weight:800;
-
-            letter-spacing:.12em;
-
-            white-space:nowrap;
-
-        }
-
-
-        /* ===============================================
-           CARD
-           =============================================== */
-
-        .lg-finance-card {
-
-            position:relative;
-
-            overflow:hidden;
-
-            margin-bottom:12px;
-
-            border:
-                1px solid
-                var(--f-border);
-
-            border-radius:22px;
-
-            background:
-                linear-gradient(
-                    145deg,
-                    rgba(255,255,255,.052),
-                    rgba(255,255,255,.018)
-                );
-
-            box-shadow:
-                0 18px 55px
-                rgba(0,0,0,.25);
-
-            backdrop-filter:
-                blur(18px);
-
-            -webkit-backdrop-filter:
-                blur(18px);
-
-        }
-
-
-        .lg-finance-card-inner {
-
-            position:relative;
-
-            z-index:1;
-
-            padding:21px;
-
-        }
-
-
-        .lg-finance-card-header {
-
-            display:flex;
-
-            align-items:center;
-
-            justify-content:space-between;
-
-            gap:20px;
-
-        }
-
-
-        .lg-finance-card-label {
-
-            color:
-                var(--f-muted);
-
-            font-size:8px;
-
-            font-weight:800;
-
-            letter-spacing:.18em;
-
-            text-transform:uppercase;
-
-        }
-
-
-        .lg-finance-card-subtitle {
-
-            margin-top:6px;
-
-            color:
-                var(--f-dim);
-
-            font-size:10px;
-
-            line-height:1.4;
-
-        }
-
-
-        .lg-finance-card-number {
-
-            color:
-                var(--f-dim);
-
-            font-size:8px;
-
-            font-weight:800;
-
-            letter-spacing:.12em;
-
-        }
-
-
-        /* ===============================================
-           INCOME
-           =============================================== */
-
-        .lg-finance-big-number {
-
-            margin-top:25px;
-
-            font-size:
-                clamp(
-                    38px,
-                    11vw,
-                    58px
-                );
-
-            line-height:.9;
-
-            font-weight:850;
-
-            letter-spacing:-.07em;
-
-        }
-
-
-        .lg-finance-income-base {
-
-            display:flex;
-
-            align-items:center;
-
-            gap:8px;
-
-            margin-top:10px;
-
-            color:
-                var(--f-muted);
-
-            font-size:8px;
-
-            font-weight:750;
-
-            letter-spacing:.1em;
-
-        }
-
-
-        .lg-finance-income-base-percent {
-
-            display:inline-flex;
-
-            padding:
-                4px
-                7px;
-
-            border:
-                1px solid
-                var(--f-border);
-
-            border-radius:999px;
-
-            color:
-                var(--f-soft);
-
-            font-size:7px;
-
-            font-weight:800;
-
-        }
-
-
-        /* ===============================================
-           ACCORDION
-           =============================================== */
-
-        .lg-finance-accordion {
-
-            cursor:default;
-
-        }
-
-
-        .lg-finance-accordion-header {
-
-            width:100%;
-
-            display:flex;
-
-            align-items:center;
-
-            justify-content:space-between;
-
-            gap:18px;
-
-            padding:21px;
-
-            border:0;
-
-            background:transparent;
-
-            color:inherit;
-
-            font-family:inherit;
-
-            text-align:left;
-
-            cursor:pointer;
-
-        }
-
-
-        .lg-finance-accordion-title {
-
-            min-width:0;
-
-        }
-
-
-        .lg-finance-accordion-value {
-
-            display:flex;
-
-            align-items:center;
-
-            gap:12px;
-
-            flex-shrink:0;
-
-        }
-
-
-        .lg-finance-accordion-amount {
-
-            font-size:18px;
-
-            font-weight:800;
-
-            letter-spacing:-.04em;
-
-        }
-
-
-        .lg-finance-accordion-arrow {
-
-            width:26px;
-            height:26px;
-
-            display:grid;
-
-            place-items:center;
-
-            border:
-                1px solid
-                var(--f-border);
-
-            border-radius:50%;
-
-            color:
-                var(--f-muted);
-
-            font-size:16px;
-
-            font-weight:300;
-
-            transition:
-                transform .3s
-                cubic-bezier(
-                    .22,
-                    1,
-                    .36,
-                    1
-                ),
-                color .2s ease,
-                border-color .2s ease;
-
-        }
-
-
-        .lg-finance-accordion.open
-        .lg-finance-accordion-arrow {
-
-            transform:rotate(45deg);
-
-            color:
-                var(--f-white);
-
-            border-color:
-                rgba(255,255,255,.2);
-
-        }
-
-
-        .lg-finance-accordion-content {
-
-            display:grid;
-
-            grid-template-rows:0fr;
-
-            transition:
-                grid-template-rows
-                .36s
-                cubic-bezier(
-                    .22,
-                    1,
-                    .36,
-                    1
-                );
-
-        }
-
-
-        .lg-finance-accordion.open
-        .lg-finance-accordion-content {
-
-            grid-template-rows:1fr;
-
-        }
-
-
-        .lg-finance-accordion-inner {
-
-            min-height:0;
-
-            overflow:hidden;
-
-            padding:
-                0
-                21px;
-
-            opacity:0;
-
-            transform:
-                translateY(-7px);
-
-            transition:
-                opacity .25s ease,
-                transform .36s
-                cubic-bezier(
-                    .22,
-                    1,
-                    .36,
-                    1
-                ),
-                padding .36s ease;
-
-        }
-
-
-        .lg-finance-accordion.open
-        .lg-finance-accordion-inner {
-
-            padding:
-                0
-                21px
-                21px;
-
-            opacity:1;
-
-            transform:
-                translateY(0);
-
-        }
-
-
-        .lg-finance-divider {
-
-            border-top:
-                1px solid
-                var(--f-border);
-
-        }
-
-
-        /* ===============================================
-           META
-           =============================================== */
-
-        .lg-finance-goal-row {
-
-            display:flex;
-
-            align-items:flex-end;
-
-            justify-content:space-between;
-
-            gap:15px;
-
-            margin-top:25px;
-
-        }
-
-
-        .lg-finance-meta-label {
-
-            color:
-                var(--f-dim);
-
-            font-size:7px;
-
-            font-weight:800;
-
-            letter-spacing:.13em;
-
-            text-transform:uppercase;
-
-        }
-
-
-        .lg-finance-meta-value {
-
-            margin-top:5px;
-
-            color:
-                var(--f-soft);
-
-            font-size:15px;
-
-            font-weight:750;
-
-        }
-
-
-        /* ===============================================
-           RATIO
-           =============================================== */
-
-        .lg-finance-ratio {
-
-            display:flex;
-
-            align-items:center;
-
-            justify-content:space-between;
-
-            gap:15px;
-
-            margin-top:18px;
-
-            padding:
-                11px
-                12px;
-
-            border:
-                1px solid
-                rgba(255,255,255,.055);
-
-            border-radius:12px;
-
-            background:
-                rgba(255,255,255,.018);
-
-        }
-
-
-        .lg-finance-ratio-label {
-
-            color:
-                var(--f-muted);
-
-            font-size:7px;
-
-            font-weight:800;
-
-            letter-spacing:.12em;
-
-            text-transform:uppercase;
-
-        }
-
-
-        .lg-finance-ratio-value {
-
-            color:
-                var(--f-white);
-
-            font-size:14px;
-
-            font-weight:850;
-
-            letter-spacing:-.03em;
-
-        }
-
-
-        /* ===============================================
-           PROGRESS
-           =============================================== */
-
-        .lg-finance-progress {
-
-            margin-top:20px;
-
-        }
-
-
-        .lg-finance-progress-track {
-
-            width:100%;
-
-            height:4px;
-
-            overflow:hidden;
-
-            border-radius:999px;
-
-            background:
-                rgba(255,255,255,.065);
-
-        }
-
-
-        .lg-finance-progress-fill {
-
-            height:100%;
-
-            border-radius:inherit;
-
-            background:
-                linear-gradient(
-                    90deg,
-                    rgba(255,255,255,.32),
-                    rgba(255,255,255,.95)
-                );
-
-            box-shadow:
-                0 0 16px
-                rgba(255,255,255,.2);
-
-            transition:
-                width .45s
-                cubic-bezier(
-                    .22,
-                    1,
-                    .36,
-                    1
-                );
-
-        }
-
-
-        .lg-finance-progress-bottom {
-
-            display:flex;
-
-            justify-content:space-between;
-
-            gap:10px;
-
-            margin-top:8px;
-
-            color:
-                var(--f-dim);
-
-            font-size:7px;
-
-            font-weight:750;
-
-            letter-spacing:.1em;
-
-        }
-
-
-        /* ===============================================
-           BUTTON
-           =============================================== */
-
-        .lg-finance-button {
-
-            appearance:none;
-
-            min-height:35px;
-
-            padding:
-                0
-                12px;
-
-            border:
-                1px solid
-                var(--f-border-strong);
-
-            border-radius:11px;
-
-            background:
-                rgba(255,255,255,.035);
-
-            color:
-                var(--f-soft);
-
-            font-family:inherit;
-
-            font-size:8px;
-
-            font-weight:800;
-
-            letter-spacing:.11em;
-
-            cursor:pointer;
-
-            transition:
-                background .16s ease,
-                border-color .16s ease,
-                transform .16s ease,
-                color .16s ease;
-
-        }
-
-
-        .lg-finance-button:hover {
-
-            color:
-                var(--f-white);
-
-            background:
-                rgba(255,255,255,.075);
-
-            border-color:
-                rgba(255,255,255,.22);
-
-        }
-
-
-        .lg-finance-button:active {
-
-            transform:scale(.97);
-
-        }
-
-
-        .lg-finance-main-button {
-
-            width:100%;
-
-            margin-top:20px;
-
-        }
-
-
-        /* ===============================================
-           EXPENSE LIST
-           =============================================== */
-
-        .lg-finance-expense-list {
-
-            border-top:
-                1px solid
-                var(--f-border);
-
-        }
-
-
-        .lg-finance-expense-swipe {
-
-            position:relative;
-
-            overflow:hidden;
-
-            border-bottom:
-                1px solid
-                rgba(255,255,255,.055);
-
-            touch-action:pan-y;
-
-            user-select:none;
-
-            -webkit-user-select:none;
-
-        }
-
-
-        .lg-finance-expense-delete-action {
-
-            position:absolute;
-
-            top:0;
-
-            right:0;
-
-            bottom:0;
-
-            width:88px;
-
-            display:flex;
-
-            align-items:center;
-
-            justify-content:center;
-
-            background:
-                rgba(255,255,255,.09);
-
-            color:
-                rgba(255,255,255,.9);
-
-            font-size:8px;
-
-            font-weight:800;
-
-            letter-spacing:.13em;
-
-            cursor:pointer;
-
-        }
-
-
-        .lg-finance-expense-row {
-
-            position:relative;
-
-            z-index:2;
-
-            min-height:55px;
-
-            display:flex;
-
-            align-items:center;
-
-            justify-content:space-between;
-
-            gap:15px;
-
-            padding:0;
-
-            background:#0a0a0a;
-
-            transform:
-                translateX(0);
-
-            transition:
-                transform .28s
-                cubic-bezier(
-                    .22,
-                    1,
-                    .36,
-                    1
-                );
-
-            will-change:
-                transform;
-
-        }
-
-
-        .lg-finance-expense-row.swiped {
-
-            transform:
-                translateX(-88px);
-
-        }
-
-
-        .lg-finance-expense-name {
-
-            min-width:0;
-
-            overflow:hidden;
-
-            padding-left:2px;
-
-            color:
-                var(--f-soft);
-
-            font-size:11px;
-
-            font-weight:600;
-
-            text-overflow:ellipsis;
-
-            white-space:nowrap;
-
-        }
-
-
-        .lg-finance-expense-amount {
-
-            padding-right:2px;
-
-            color:
-                var(--f-white);
-
-            font-size:11px;
-
-            font-weight:750;
-
-            flex-shrink:0;
-
-        }
-
-
-        .lg-finance-expense-actions {
-
-            display:flex;
-
-            align-items:center;
-
-            flex-shrink:0;
-
-        }
-
-
-        /* ===============================================
-           ADD EXPENSE
-           =============================================== */
-
-        .lg-finance-add-expense {
-
-            width:100%;
-
-            height:43px;
-
-            margin-top:12px;
-
-            display:flex;
-
-            align-items:center;
-
-            justify-content:center;
-
-            gap:8px;
-
-            border:
-                1px dashed
-                rgba(255,255,255,.13);
-
-            border-radius:11px;
-
-            background:
-                rgba(255,255,255,.018);
-
-            color:
-                var(--f-muted);
-
-            font-family:inherit;
-
-            font-size:8px;
-
-            font-weight:800;
-
-            letter-spacing:.13em;
-
-            cursor:pointer;
-
-        }
-
-
-        .lg-finance-add-expense-plus {
-
-            font-size:16px;
-
-            font-weight:300;
-
-        }
-
-
-        /* ===============================================
-           EMPTY
-           =============================================== */
-
-        .lg-finance-empty {
-
-            padding:
-                22px
-                0;
-
-            color:
-                var(--f-dim);
-
-            font-size:9px;
-
-        }
-
-
-        /* ===============================================
-           STABILITY
-           =============================================== */
-
-        .lg-finance-stability-content {
-
-            display:flex;
-
-            align-items:center;
-
-            gap:17px;
-
-        }
-
-
-        .lg-finance-stability-score {
-
-            width:70px;
-            height:70px;
-
-            display:grid;
-
-            place-items:center;
-
-            flex-shrink:0;
-
-            border:
-                1px solid
-                var(--f-border-strong);
-
-            border-radius:20px;
-
-            background:
-                rgba(255,255,255,.025);
-
-            color:
-                var(--f-dim);
-
-            font-size:30px;
-
-            font-weight:800;
-
-        }
-
-
-        .lg-finance-stability-status {
-
-            color:
-                var(--f-soft);
-
-            font-size:9px;
-
-            font-weight:800;
-
-            letter-spacing:.13em;
-
-        }
-
-
-        .lg-finance-stability-text {
-
-            max-width:360px;
-
-            margin-top:7px;
-
-            color:
-                var(--f-dim);
-
-            font-size:10px;
-
-            line-height:1.5;
-
-        }
-
-
-        /* ===============================================
-           STATISTICS
-           =============================================== */
-
-        .lg-finance-statistics-controls {
-
-            display:flex;
-
-            align-items:stretch;
-
-            gap:9px;
-
-        }
-
-
-        .lg-finance-statistics-period {
-
-            flex:1;
-
-            min-width:0;
-
-            min-height:52px;
-
-            display:flex;
-
-            flex-direction:column;
-
-            align-items:flex-start;
-
-            justify-content:center;
-
-            gap:5px;
-
-            padding:
-                0
-                13px;
-
-            border:
-                1px solid
-                var(--f-border);
-
-            border-radius:13px;
-
-            background:
-                rgba(255,255,255,.025);
-
-            color:
-                var(--f-white);
-
-            font-family:inherit;
-
-            text-align:left;
-
-            cursor:pointer;
-
-        }
-
-
-        .lg-finance-statistics-period
-        > span:first-child {
-
-            font-size:10px;
-
-            font-weight:850;
-
-            letter-spacing:.08em;
-
-        }
-
-
-        .lg-finance-statistics-cycle {
-
-            color:
-                var(--f-dim);
-
-            font-size:6px;
-
-            font-weight:800;
-
-            letter-spacing:.13em;
-
-        }
-
-
-        .lg-finance-sort-button {
-
-            min-width:78px;
-
-            height:auto;
-
-        }
-
-
-        .lg-finance-statistics-status {
-
-            margin-top:11px;
-
-            padding:
-                12px
-                13px;
-
-            border:
-                1px solid
-                rgba(255,255,255,.055);
-
-            border-radius:13px;
-
-            background:
-                rgba(255,255,255,.018);
-
-        }
-
-
-        .lg-finance-statistics-status-label {
-
-            color:
-                var(--f-dim);
-
-            font-size:7px;
-
-            font-weight:800;
-
-            letter-spacing:.14em;
-
-            margin-right:9px;
-
-        }
-
-
-        .lg-finance-statistics-status-value {
-
-            color:
-                var(--f-white);
-
-            font-size:10px;
-
-            font-weight:800;
-
-        }
-
-
-        .lg-finance-statistics-status-note {
-
-            margin-top:7px;
-
-            color:
-                var(--f-dim);
-
-            font-size:6px;
-
-            font-weight:750;
-
-            letter-spacing:.1em;
-
-        }
-
-
-        .lg-finance-statistics-charts {
-
-            display:flex;
-
-            flex-direction:column;
-
-            gap:10px;
-
-            margin-top:12px;
-
-        }
-
-
-        .lg-finance-chart-block {
-
-            overflow:hidden;
-
-            border:
-                1px solid
-                rgba(255,255,255,.055);
-
-            border-radius:15px;
-
-            background:
-                rgba(255,255,255,.018);
-
-        }
-
-
-        .lg-finance-chart-header {
-
-            display:flex;
-
-            align-items:center;
-
-            justify-content:space-between;
-
-            gap:10px;
-
-            padding:
-                13px
-                13px
-                5px;
-
-        }
-
-
-        .lg-finance-chart-name {
-
-            color:
-                var(--f-muted);
-
-            font-size:7px;
-
-            font-weight:850;
-
-            letter-spacing:.14em;
-
-        }
-
-
-        .lg-finance-chart-total {
-
-            color:
-                var(--f-soft);
-
-            font-size:8px;
-
-            font-weight:800;
-
-        }
-
-
-        .lg-finance-chart-wrap {
-
-            width:100%;
-
-            height:185px;
-
-            padding:
-                0
-                5px
-                4px;
-
-        }
-
-
-        .lg-finance-chart {
-
-            width:100%;
-
-            height:100%;
-
-            display:block;
-
-            overflow:visible;
-
-        }
-
-
-        .lg-finance-chart-grid {
-
-            stroke:
-                rgba(255,255,255,.055);
-
-            stroke-width:1;
-
-            vector-effect:
-                non-scaling-stroke;
-
-        }
-
-
-        .lg-finance-chart-area {
-
-            fill:
-                rgba(255,255,255,.045);
-
-        }
-
-
-        .lg-finance-chart-line {
-
-            fill:none;
-
-            stroke:
-                rgba(255,255,255,.82);
-
-            stroke-width:2;
-
-            stroke-linecap:round;
-
-            stroke-linejoin:round;
-
-            vector-effect:
-                non-scaling-stroke;
-
-        }
-
-
-        .lg-finance-chart-dot {
-
-            fill:
-                rgba(255,255,255,.95);
-
-            stroke:
-                #0b0b0b;
-
-            stroke-width:1.5;
-
-            vector-effect:
-                non-scaling-stroke;
-
-        }
-
-
-        .lg-finance-chart-label {
-
-            fill:
-                rgba(255,255,255,.28);
-
-            font-family:
-                -apple-system,
-                BlinkMacSystemFont,
-                "SF Pro Text",
-                Arial,
-                sans-serif;
-
-            font-size:8px;
-
-            font-weight:700;
-
-            letter-spacing:.02em;
-
-        }
-
-
-        .lg-finance-statistics-footer {
-
-            margin-top:15px;
-
-            padding-top:12px;
-
-            border-top:
-                1px solid
-                rgba(255,255,255,.045);
-
-            color:
-                rgba(255,255,255,.18);
-
-            font-size:6px;
-
-            font-weight:800;
-
-            letter-spacing:.16em;
-
-            text-align:center;
-
-        }
-
-
-        /* ===============================================
-           MODAL
-           =============================================== */
-
-        .lg-finance-modal {
-
-            position:fixed;
-
-            inset:0;
-
-            z-index:99999;
-
-            display:flex;
-
-            align-items:flex-end;
-
-            justify-content:center;
-
-            padding:15px;
-
-            background:
-                rgba(0,0,0,.7);
-
-            backdrop-filter:
-                blur(12px);
-
-            -webkit-backdrop-filter:
-                blur(12px);
-
-            opacity:0;
-
-            pointer-events:none;
-
-            transition:
-                opacity .2s ease;
-
-        }
-
-
-        .lg-finance-modal.active {
-
-            opacity:1;
-
-            pointer-events:auto;
-
-        }
-
-
-        .lg-finance-modal-panel {
-
-            width:100%;
-
-            max-width:520px;
-
-            padding:22px;
-
-            border:
-                1px solid
-                var(--f-border-strong);
-
-            border-radius:24px;
-
-            background:#0b0b0b;
-
-            box-shadow:
-                0 -10px 70px
-                rgba(0,0,0,.6);
-
-            transform:
-                translateY(30px);
-
-            transition:
-                transform .28s
-                cubic-bezier(
-                    .22,
-                    1,
-                    .36,
-                    1
-                );
-
-        }
-
-
-        .lg-finance-modal.active
-        .lg-finance-modal-panel {
-
-            transform:
-                translateY(0);
-
-        }
-
-
-        .lg-finance-modal-label {
-
-            color:
-                var(--f-muted);
-
-            font-size:8px;
-
-            font-weight:800;
-
-            letter-spacing:.18em;
-
-        }
-
-
-        .lg-finance-modal-title {
-
-            margin-top:7px;
-
-            font-size:23px;
-
-            font-weight:800;
-
-            letter-spacing:-.04em;
-
-        }
-
-
-        .lg-finance-input {
-
-            width:100%;
-
-            height:55px;
-
-            margin-top:20px;
-
-            padding:
-                0
-                16px;
-
-            border:
-                1px solid
-                var(--f-border-strong);
-
-            border-radius:13px;
-
-            outline:none;
-
-            background:
-                rgba(255,255,255,.045);
-
-            color:
-                var(--f-white);
-
-            font-family:inherit;
-
-            font-size:19px;
-
-            font-weight:700;
-
-            -webkit-appearance:none;
-
-        }
-
-
-        .lg-finance-modal-buttons {
-
-            display:grid;
-
-            grid-template-columns:
-                1fr
-                1fr;
-
-            gap:9px;
-
-            margin-top:12px;
-
-        }
-
-
-        .lg-finance-modal-button {
-
-            height:46px;
-
-            border:
-                1px solid
-                var(--f-border);
-
-            border-radius:12px;
-
-            background:
-                rgba(255,255,255,.035);
-
-            color:
-                var(--f-soft);
-
-            font-family:inherit;
-
-            font-size:8px;
-
-            font-weight:800;
-
-            letter-spacing:.1em;
-
-            cursor:pointer;
-
-        }
-
-
-        .lg-finance-modal-save {
-
-            background:
-                rgba(255,255,255,.09);
-
-            border-color:
-                rgba(255,255,255,.18);
-
-            color:
-                var(--f-white);
-
-        }
-
-
-        /* ===============================================
-           MOBILE
-           =============================================== */
-
-        @media (max-width:500px) {
-
-            .lg-finance-card-inner {
-                padding:19px;
-            }
-
-            .lg-finance-accordion-header {
-                padding:19px;
-            }
-
-            .lg-finance-accordion.open
-            .lg-finance-accordion-inner {
-
-                padding:
-                    0
-                    19px
-                    19px;
-
-            }
-
-            .lg-finance-chart-wrap {
-
-                height:165px;
-
-            }
-
-        }
-
-    `;
-
-    document.head.appendChild(style);
-}
-
-
-/* =========================================================
-   MODAL
-   ========================================================= */
-
-let activeModal = null;
-
-
-function closeModal() {
-
-    if (!activeModal) {
-        return;
-    }
-
-    activeModal.remove();
-
-    activeModal = null;
-}
-
-
-function openModal({
-    label,
-    title,
-    value = "",
-    placeholder = "",
-    onSave
-}) {
-
-    closeModal();
-
-    const modal =
-        document.createElement("div");
-
-    modal.className =
-        "lg-finance-modal active";
-
-    modal.innerHTML = `
-
-        <div
-            class="lg-finance-modal-panel"
-        >
-
-            <div
-                class="lg-finance-modal-label"
-            >
-                ${escapeHTML(label)}
-            </div>
-
-            <div
-                class="lg-finance-modal-title"
-            >
-                ${escapeHTML(title)}
-            </div>
-
-            <input
-                class="lg-finance-input"
-                type="number"
-                inputmode="decimal"
-                min="0"
-                step="1"
-                value="${escapeHTML(value)}"
-                placeholder="${escapeHTML(placeholder)}"
-            >
-
-            <div
-                class="lg-finance-modal-buttons"
-            >
-
-                <button
-                    type="button"
-                    class="lg-finance-modal-button"
-                    data-modal-cancel
-                >
-                    CANCEL
-                </button>
-
-                <button
-                    type="button"
-                    class="
-                        lg-finance-modal-button
-                        lg-finance-modal-save
-                    "
-                    data-modal-save
-                >
-                    SAVE
-                </button>
-
-            </div>
-
-        </div>
-
-    `;
-
-    document.body.appendChild(
-        modal
-    );
-
-    activeModal =
-        modal;
-
-    const input =
-        modal.querySelector(
-            ".lg-finance-input"
-        );
-
-    requestAnimationFrame(() => {
-
-        input.focus();
-
-        try {
-            input.select();
-        } catch (_) {}
-
-    });
-
-    modal
-        .querySelector(
-            "[data-modal-cancel]"
-        )
-        .addEventListener(
-            "click",
-            closeModal
-        );
-
-    modal
-        .querySelector(
-            "[data-modal-save]"
-        )
-        .addEventListener(
-            "click",
-            () => {
-
-                const value =
-                    numberValue(
-                        input.value
-                    );
-
-                onSave(value);
-
-                closeModal();
-
-            }
-        );
-
-    modal.addEventListener(
-        "click",
-        event => {
-
-            if (
-                event.target === modal
-            ) {
-
-                closeModal();
-
-            }
-
-        }
-    );
-
-    input.addEventListener(
-        "keydown",
-        event => {
-
-            if (
-                event.key === "Enter"
-            ) {
-
-                event.preventDefault();
-
-                modal
-                    .querySelector(
-                        "[data-modal-save]"
+function getIncomeStatistics() {
+    const values =
+        financeState.incomeHistory
+            .map(
+                item =>
+                    parseMoney(
+                        item.amount
                     )
-                    .click();
-
-            }
-
-            if (
-                event.key === "Escape"
-            ) {
-
-                closeModal();
-
-            }
-
-        }
-    );
+            )
+            .filter(
+                value =>
+                    value > 0
+            );
+    if (!values.length) {
+        return {
+            total: 0,
+            average: 0,
+            minimum: 0,
+            maximum: 0,
+            months: 0
+        };
+    }
+    const total =
+        values.reduce(
+            (sum, value) =>
+                sum + value,
+            0
+        );
+    const average =
+        total /
+        values.length;
+    return {
+        total,
+        average,
+        minimum:
+            Math.min(...values),
+        maximum:
+            Math.max(...values),
+        months:
+            values.length
+    };
 }
-
-
 /* =========================================================
-   EXPENSE MODAL
+   RENDER HELPERS
    ========================================================= */
-
-function openExpenseModal() {
-
-    closeModal();
-
-    const modal =
-        document.createElement("div");
-
-    modal.className =
-        "lg-finance-modal active";
-
-    modal.innerHTML = `
-
-        <div
-            class="lg-finance-modal-panel"
-        >
-
-            <div
-                class="lg-finance-modal-label"
-            >
-                REQUIRED EXPENSE
-            </div>
-
-            <div
-                class="lg-finance-modal-title"
-            >
-                Add expense
-            </div>
-
-            <input
-                class="lg-finance-input"
-                data-expense-name
-                type="text"
-                maxlength="80"
-                placeholder="Название траты"
-            >
-
-            <input
-                class="lg-finance-input"
-                data-expense-amount
-                type="number"
-                inputmode="decimal"
-                min="0"
-                step="1"
-                placeholder="Сумма ₽"
-            >
-
-            <div
-                class="lg-finance-modal-buttons"
-            >
-
-                <button
-                    type="button"
-                    class="lg-finance-modal-button"
-                    data-modal-cancel
-                >
-                    CANCEL
-                </button>
-
-                <button
-                    type="button"
-                    class="
-                        lg-finance-modal-button
-                        lg-finance-modal-save
-                    "
-                    data-modal-save
-                >
-                    ADD
-                </button>
-
-            </div>
-
-        </div>
-
-    `;
-
-    document.body.appendChild(
-        modal
-    );
-
-    activeModal =
-        modal;
-
-    const nameInput =
-        modal.querySelector(
-            "[data-expense-name]"
-        );
-
-    const amountInput =
-        modal.querySelector(
-            "[data-expense-amount]"
-        );
-
-    requestAnimationFrame(() => {
-
-        nameInput.focus();
-
-    });
-
-    modal
-        .querySelector(
-            "[data-modal-cancel]"
-        )
-        .addEventListener(
-            "click",
-            closeModal
-        );
-
-    modal
-        .querySelector(
-            "[data-modal-save]"
-        )
-        .addEventListener(
-            "click",
-            () => {
-
-                const name =
-                    nameInput.value.trim();
-
-                const amount =
-                    numberValue(
-                        amountInput.value
-                    );
-
-                if (!name) {
-
-                    nameInput.focus();
-
-                    return;
-
-                }
-
-                if (amount <= 0) {
-
-                    amountInput.focus();
-
-                    return;
-
-                }
-
-                const {
-                    data,
-                    month
-                } =
-                    getFinanceData();
-
-                if (
-                    !Array.isArray(
-                        month.expenses
-                    )
-                ) {
-
-                    month.expenses = [];
-
-                }
-
-                month.expenses.push({
-
-                    id:
-                        createId(),
-
-                    name,
-
-                    amount
-
-                });
-
-                saveDailySnapshot(
-                    data,
-                    month
-                );
-
-                saveFinanceData(
-                    data
-                );
-
-                closeModal();
-
-                renderFinance(
-                    getFinanceContainer(),
-                    true
-                );
-
-            }
-        );
-
-    amountInput.addEventListener(
-        "keydown",
-        event => {
-
-            if (
-                event.key === "Enter"
-            ) {
-
-                event.preventDefault();
-
-                modal
-                    .querySelector(
-                        "[data-modal-save]"
-                    )
-                    .click();
-
-            }
-
-        }
-    );
-}
-
-
-/* =========================================================
-   EXPENSE LIST
-   ========================================================= */
-
-function renderExpenses(
-    expenses
+function renderValue(
+    value
 ) {
-
     if (
-        !Array.isArray(expenses) ||
-        expenses.length === 0
+        !Number.isFinite(value)
     ) {
-
-        return `
-
-            <div
-                class="lg-finance-empty"
-            >
-                Пока обязательных трат нет.
-            </div>
-
-        `;
-
+        return "—";
     }
-
-    return expenses
-        .map(expense => {
-
-            return `
-
-                <div
-                    class="
-                        lg-finance-expense-swipe
-                    "
-                    data-expense-id="${escapeHTML(
-                        expense.id
-                    )}"
-                >
-
-                    <div
-                        class="
-                            lg-finance-expense-delete-action
-                        "
-                        data-delete-expense
-                        data-id="${escapeHTML(
-                            expense.id
-                        )}"
-                    >
-                        DELETE
-                    </div>
-
-                    <div
-                        class="
-                            lg-finance-expense-row
-                        "
-                        data-swipe-row
-                    >
-
-                        <div
-                            class="
-                                lg-finance-expense-name
-                            "
-                        >
-                            ${escapeHTML(
-                                expense.name
-                            )}
-                        </div>
-
-                        <div
-                            class="
-                                lg-finance-expense-actions
-                            "
-                        >
-
-                            <div
-                                class="
-                                    lg-finance-expense-amount
-                                "
-                            >
-                                ${money(
-                                    expense.amount
-                                )}
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            `;
-
-        })
-        .join("");
+    return formatMoney(value);
 }
-
-
+function renderScore(
+    value
+) {
+    if (
+        !Number.isFinite(value)
+    ) {
+        return "—";
+    }
+    return Math.round(value);
+}
 /* =========================================================
    ACCORDION
    ========================================================= */
-
-function createAccordion({
-    id,
-    label,
-    subtitle,
-    amount,
-    content,
-    open = false
-}) {
-
-    return `
-
-        <section
-            class="
-                lg-finance-card
-                lg-finance-accordion
-                ${open ? "open" : ""}
-            "
-            data-accordion="${id}"
-        >
-
-            <button
-                type="button"
-                class="
-                    lg-finance-accordion-header
-                "
-                data-action="toggle-accordion"
-                data-accordion-id="${id}"
-                aria-expanded="${open}"
-            >
-
-                <div
-                    class="
-                        lg-finance-accordion-title
-                    "
-                >
-
-                    <div
-                        class="
-                            lg-finance-card-label
-                        "
-                    >
-                        ${label}
-                    </div>
-
-                    <div
-                        class="
-                            lg-finance-card-subtitle
-                        "
-                    >
-                        ${subtitle}
-                    </div>
-
-                </div>
-
-                <div
-                    class="
-                        lg-finance-accordion-value
-                    "
-                >
-
-                    ${
-                        amount !== undefined
-                            ? `
-                                <div
-                                    class="
-                                        lg-finance-accordion-amount
-                                    "
-                                >
-                                    ${amount}
-                                </div>
-                            `
-                            : ""
-                    }
-
-                    <div
-                        class="
-                            lg-finance-accordion-arrow
-                        "
-                    >
-                        +
-                    </div>
-
-                </div>
-
-            </button>
-
-            <div
-                class="
-                    lg-finance-accordion-content
-                "
-            >
-
-                <div
-                    class="
-                        lg-finance-accordion-inner
-                    "
-                >
-
-                    <div
-                        class="
-                            lg-finance-divider
-                        "
-                    ></div>
-
-                    <div
-                        style="
-                            padding-top:20px;
-                        "
-                    >
-
-                        ${content}
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </section>
-
-    `;
+function toggleFinancePanel(
+    panelId
+) {
+    const panel =
+        document.getElementById(
+            panelId
+        );
+    if (!panel) {
+        return;
+    }
+    const isOpen =
+        panel.classList.contains(
+            "finance-panel-open"
+        );
+    document
+        .querySelectorAll(
+            ".finance-panel"
+        )
+        .forEach(
+            item => {
+                item.classList.remove(
+                    "finance-panel-open"
+                );
+            }
+        );
+    if (!isOpen) {
+        panel.classList.add(
+            "finance-panel-open"
+        );
+    }
 }
-
-
+/* =========================================================
+   SAVE FIELD
+   ========================================================= */
+function saveFinanceField(
+    field,
+    input
+) {
+    const value =
+        parseMoney(
+            input.value
+        );
+    financeState[field] =
+        value;
+    saveFinanceState();
+    renderFinance();
+}
+/* =========================================================
+   ADD INCOME
+   ========================================================= */
+function addIncomeEntry() {
+    const input =
+        document.getElementById(
+            "finance-income-input"
+        );
+    const monthInput =
+        document.getElementById(
+            "finance-income-month"
+        );
+    if (!input) {
+        return;
+    }
+    const amount =
+        parseMoney(
+            input.value
+        );
+    if (
+        amount <= 0
+    ) {
+        return;
+    }
+    const month =
+        monthInput &&
+        monthInput.value
+            ? monthInput.value
+            : new Date()
+                .toISOString()
+                .slice(0, 7);
+    financeState
+        .incomeHistory
+        .push({
+            month,
+            amount
+        });
+    /*
+     * Current income is automatically updated
+     * with the latest entered income.
+     */
+    financeState.currentIncome =
+        amount;
+    saveFinanceState();
+    renderFinance();
+}
+/* =========================================================
+   DELETE INCOME
+   ========================================================= */
+function deleteIncomeEntry(
+    index
+) {
+    if (
+        index < 0 ||
+        index >=
+        financeState
+            .incomeHistory
+            .length
+    ) {
+        return;
+    }
+    financeState
+        .incomeHistory
+        .splice(
+            index,
+            1
+        );
+    /*
+     * Latest remaining income
+     * becomes current income.
+     */
+    if (
+        financeState
+            .incomeHistory
+            .length
+    ) {
+        const latest =
+            financeState
+                .incomeHistory[
+                    financeState
+                        .incomeHistory
+                        .length - 1
+                ];
+        financeState.currentIncome =
+            parseMoney(
+                latest.amount
+            );
+    } else {
+        financeState.currentIncome =
+            0;
+    }
+    saveFinanceState();
+    renderFinance();
+}
+/* =========================================================
+   RENDER INCOME HISTORY
+   ========================================================= */
+function renderIncomeHistory() {
+    if (
+        !financeState
+            .incomeHistory
+            .length
+    ) {
+        return `
+            <div class="finance-empty">
+                История доходов пока пуста.
+            </div>
+        `;
+    }
+    return financeState
+        .incomeHistory
+        .map(
+            (entry, index) => {
+                const date =
+                    entry.month
+                        ? new Date(
+                            `${entry.month}-01`
+                        )
+                        .toLocaleDateString(
+                            "ru-RU",
+                            {
+                                month:
+                                    "long",
+                                year:
+                                    "numeric"
+                            }
+                        )
+                        : "Месяц";
+                return `
+                    <div class="finance-income-row">
+                        <div>
+                            <div class="finance-income-month">
+                                ${date}
+                            </div>
+                            <div class="finance-income-amount">
+                                ${formatMoney(entry.amount)} ₽
+                            </div>
+                        </div>
+                        <button
+                            class="finance-delete-button"
+                            data-delete-income="${index}"
+                            type="button"
+                        >
+                            ×
+                        </button>
+                    </div>
+                `;
+            }
+        )
+        .join("");
+}
 /* =========================================================
    MAIN RENDER
    ========================================================= */
-
-function renderFinance(
-    container,
-    reopenExpenses = false
-) {
-
-    if (!container) {
-        return;
-    }
-
-    const {
-        data,
-        month
-    } =
-        getFinanceData();
-
-    const income =
-        numberValue(
-            month.income
-        );
-
-    const goal =
-        numberValue(
-            month.incomeGoal
-        );
-
-    const totalExpenses =
-        expensesTotal(
-            month
-        );
-
-    const reserve =
-        numberValue(
-            month.reserve
-        );
-
-    const goalPercent =
-        goalProgress(
-            month
-        );
-
-    const expensePercentage =
-        expensePercent(
-            month
-        );
-
-    const reservePercentage =
-        reservePercent(
-            month
-        );
-
-    const visualGoal =
-        Math.min(
-            100,
-            Math.max(
-                0,
-                goalPercent
-            )
-        );
-
-    const visualReserve =
-        Math.min(
-            100,
-            Math.max(
-                0,
-                reservePercentage
-            )
-        );
-
-
-    /* ===============================================
-       GOAL
-       =============================================== */
-
-    const goalContent = `
-
-        <div
-            class="lg-finance-goal-row"
-            style="margin-top:0;"
-        >
-
-            <div>
-
-                <div
-                    class="lg-finance-meta-label"
-                >
-                    TARGET
-                </div>
-
-                <div
-                    class="lg-finance-meta-value"
-                >
-                    ${
-                        goal > 0
-                            ? money(goal)
-                            : "Не задана"
-                    }
-                </div>
-
-            </div>
-
-            <button
-                type="button"
-                class="lg-finance-button"
-                data-action="edit-goal"
-            >
-                ${
-                    goal > 0
-                        ? "EDIT GOAL"
-                        : "SET GOAL"
-                }
-            </button>
-
-        </div>
-
-        <div
-            class="lg-finance-ratio"
-        >
-
-            <div
-                class="lg-finance-ratio-label"
-            >
-                ACTUAL INCOME / GOAL
-            </div>
-
-            <div
-                class="lg-finance-ratio-value"
-            >
-                ${goalPercent}%
-            </div>
-
-        </div>
-
-        <div
-            class="lg-finance-progress"
-        >
-
-            <div
-                class="lg-finance-progress-track"
-            >
-
-                <div
-                    class="lg-finance-progress-fill"
-                    style="
-                        width:${visualGoal}%;
-                    "
-                ></div>
-
-            </div>
-
-            <div
-                class="lg-finance-progress-bottom"
-            >
-
-                <span>
-                    ${goalPercent}% OF GOAL
-                </span>
-
-                <span>
-
-                    ${
-                        goal > 0
-                            ? (
-                                goalPercent >= 100
-                                    ? "GOAL REACHED"
-                                    : money(
-                                        Math.max(
-                                            0,
-                                            goal - income
-                                        )
-                                    ) + " LEFT"
-                            )
-                            : "SET YOUR GOAL"
-                    }
-
-                </span>
-
-            </div>
-
-        </div>
-
-    `;
-
-
-    /* ===============================================
-       EXPENSES
-       =============================================== */
-
-    const expenseContent = `
-
-        <div
-            class="lg-finance-ratio"
-            style="
-                margin-top:0;
-                margin-bottom:18px;
-            "
-        >
-
-            <div
-                class="lg-finance-ratio-label"
-            >
-                OF ACTUAL INCOME
-            </div>
-
-            <div
-                class="lg-finance-ratio-value"
-            >
-                ${expensePercentage}%
-            </div>
-
-        </div>
-
-        <div
-            class="lg-finance-expense-list"
-        >
-
-            ${renderExpenses(
-                month.expenses
-            )}
-
-        </div>
-
-        <button
-            type="button"
-            class="
-                lg-finance-add-expense
-            "
-            data-action="add-expense"
-        >
-
-            <span
-                class="
-                    lg-finance-add-expense-plus
-                "
-            >
-                +
-            </span>
-
-            ADD EXPENSE
-
-        </button>
-
-    `;
-
-
-    /* ===============================================
-       RESERVE
-       =============================================== */
-
-    const reserveContent = `
-
-        <div
-            class="lg-finance-goal-row"
-            style="margin-top:0;"
-        >
-
-            <div>
-
-                <div
-                    class="lg-finance-meta-label"
-                >
-                    SAVED THIS MONTH
-                </div>
-
-                <div
-                    class="lg-finance-meta-value"
-                >
-                    ${money(reserve)}
-                </div>
-
-            </div>
-
-            <button
-                type="button"
-                class="lg-finance-button"
-                data-action="edit-reserve"
-            >
-
-                ${
-                    reserve > 0
-                        ? "EDIT RESERVE"
-                        : "SET RESERVE"
-                }
-
-            </button>
-
-        </div>
-
-        <div
-            class="lg-finance-ratio"
-        >
-
-            <div
-                class="lg-finance-ratio-label"
-            >
-                OF ACTUAL INCOME
-            </div>
-
-            <div
-                class="lg-finance-ratio-value"
-            >
-                ${reservePercentage}%
-            </div>
-
-        </div>
-
-        <div
-            class="lg-finance-progress"
-        >
-
-            <div
-                class="lg-finance-progress-track"
-            >
-
-                <div
-                    class="lg-finance-progress-fill"
-                    style="
-                        width:${visualReserve}%;
-                    "
-                ></div>
-
-            </div>
-
-            <div
-                class="
-                    lg-finance-progress-bottom
-                "
-            >
-
-                <span>
-                    ${reservePercentage}% OF INCOME
-                </span>
-
-            </div>
-
-        </div>
-
-    `;
-
-
-    /* ===============================================
-       STABILITY
-       =============================================== */
-
-    const stabilityContent = `
-
-        <div
-            class="lg-finance-ratio"
-            style="
-                margin-top:0;
-                margin-bottom:18px;
-            "
-        >
-
-            <div
-                class="lg-finance-ratio-label"
-            >
-                OF ACTUAL INCOME
-            </div>
-
-            <div
-                class="lg-finance-ratio-value"
-            >
-                —
-            </div>
-
-        </div>
-
-        <div
-            class="
-                lg-finance-stability-content
-            "
-        >
-
-            <div
-                class="
-                    lg-finance-stability-score
-                "
-            >
-                —
-            </div>
-
-            <div>
-
-                <div
-                    class="
-                        lg-finance-stability-status
-                    "
-                >
-                    ANALYSIS PENDING
-                </div>
-
-                <div
-                    class="
-                        lg-finance-stability-text
-                    "
-                >
-                    Алгоритм финансовой стабильности
-                    будет добавлен на следующем этапе.
-                </div>
-
-            </div>
-
-        </div>
-
-    `;
-
-
-    /* ===============================================
-       STATISTICS
-       =============================================== */
-
-    const statisticsContent =
-        renderStatisticsContent(
-            data,
-            month
-        );
-
-
-    /* ===============================================
-       MAIN HTML
-       =============================================== */
-
-    container.innerHTML = `
-
-        <div
-            class="lg-finance"
-        >
-
-            <header
-                class="lg-finance-header"
-            >
-
-                <h1
-                    class="lg-finance-title"
-                >
-                    Finance
-                </h1>
-
-                <div
-                    class="lg-finance-date"
-                >
-                    ${currentFinanceDate()}
-                </div>
-
-            </header>
-
-
-            <!-- MONTHLY INCOME -->
-
-            <section
-                class="lg-finance-card"
-            >
-
-                <div
-                    class="
-                        lg-finance-card-inner
-                    "
-                >
-
-                    <div
-                        class="
-                            lg-finance-card-header
-                        "
-                    >
-
-                        <div>
-
-                            <div
-                                class="
-                                    lg-finance-card-label
-                                "
-                            >
-                                MONTHLY INCOME
-                            </div>
-
-                            <div
-                                class="
-                                    lg-finance-card-subtitle
-                                "
-                            >
-                                Фактически заработано
-                            </div>
-
-                        </div>
-
-
-                        <div
-                            class="
-                                lg-finance-card-number
-                            "
-                        >
-                            01
-                        </div>
-
-                    </div>
-
-
-                    <div
-                        class="
-                            lg-finance-big-number
-                        "
-                    >
-                        ${money(income)}
-                    </div>
-
-
-                    <div
-                        class="
-                            lg-finance-income-base
-                        "
-                    >
-
-                        <span>
-                            BASE OF ALL FINANCIAL RATIOS
-                        </span>
-
-                        <span
-                            class="
-                                lg-finance-income-base-percent
-                            "
-                        >
-                            100%
-                        </span>
-
-                    </div>
-
-
-                    <button
-                        type="button"
-                        class="
-                            lg-finance-button
-                            lg-finance-main-button
-                        "
-                        data-action="edit-income"
-                    >
-                        UPDATE INCOME
-                    </button>
-
-                </div>
-
-            </section>
-
-
-            <!-- MONTHLY GOAL -->
-
-            ${createAccordion({
-
-                id:
-                    "goal",
-
-                label:
-                    "MONTHLY GOAL",
-
-                subtitle:
-                    "Цель заработка за месяц",
-
-                amount:
-                    goal > 0
-                        ? money(goal)
-                        : "—",
-
-                content:
-                    goalContent
-
-            })}
-
-
-            <!-- REQUIRED EXPENSES -->
-
-            ${createAccordion({
-
-                id:
-                    "expenses",
-
-                label:
-                    "REQUIRED EXPENSES",
-
-                subtitle:
-                    "Обязательные траты за месяц",
-
-                amount:
-                    money(totalExpenses),
-
-                content:
-                    expenseContent,
-
-                open:
-                    reopenExpenses
-
-            })}
-
-
-            <!-- FINANCIAL RESERVE -->
-
-            ${createAccordion({
-
-                id:
-                    "reserve",
-
-                label:
-                    "FINANCIAL RESERVE",
-
-                subtitle:
-                    "Отложено в этом месяце",
-
-                amount:
-                    money(reserve),
-
-                content:
-                    reserveContent
-
-            })}
-
-
-            <!-- FINANCIAL STABILITY -->
-
-            ${createAccordion({
-
-                id:
-                    "stability",
-
-                label:
-                    "FINANCIAL STABILITY",
-
-                subtitle:
-                    "Оценка финансовой устойчивости",
-
-                amount:
-                    "—",
-
-                content:
-                    stabilityContent
-
-            })}
-
-
-            <!-- STATISTICS -->
-
-            ${createAccordion({
-
-                id:
-                    "statistics",
-
-                label:
-                    "STATISTICS",
-
-                subtitle:
-                    "Аналитика финансовых показателей",
-
-                amount:
-                    statisticsMode === "week"
-                        ? "7D"
-                        : statisticsMode === "month"
-                            ? "1M"
-                            : "1Y",
-
-                content:
-                    statisticsContent
-
-            })}
-
-
-            <!-- LIFE MODULE 1 -->
-
-            <div
-                style="
-                    margin-top:22px;
-                    margin-bottom:8px;
-                    text-align:center;
-                    color:rgba(255,255,255,.22);
-                    font-size:7px;
-                    font-weight:800;
-                    letter-spacing:.18em;
-                "
-            >
-                LIFE MODULE 1
-            </div>
-
-        </div>
-
-    `;
-
-
-    bindEvents(
-        container
-    );
-
-    initExpenseSwipe(
-        container
-    );
-
-
-    /*
-     * Сохраняем дневной снимок
-     * даже при обычном рендере.
-     */
-
-    saveDailySnapshot(
-        data,
-        month
-    );
-
-    saveFinanceData(
-        data
-    );
-}
-
-
-/* =========================================================
-   CONTAINER
-   ========================================================= */
-
-function getFinanceContainer() {
-
-    return (
-
+function renderFinance() {
+    const container =
         document.getElementById(
             "finance-container"
-        )
-
-        ||
-
-        document.querySelector(
-            "[data-section='finance']"
-        )
-
-        ||
-
-        document.querySelector(
-            ".finance-container"
-        )
-
-        ||
-
-        document.querySelector(
-            "#finance"
-        )
-
-    );
+        );
+    if (!container) {
+        console.error(
+            "LIFE GAME: Finance container не найден."
+        );
+        return;
+    }
+    const statistics =
+        getIncomeStatistics();
+    const stability =
+        calculateFinancialStability();
+    const status =
+        stability.score !== null
+            ? getFinancialStabilityStatus(
+                stability.score
+            )
+            : {
+                label:
+                    "Недостаточно данных"
+            };
+    container.innerHTML = `
+        <div class="finance-module">
+            <div class="finance-header">
+                <div class="finance-title">
+                    Финансы
+                </div>
+                <div class="finance-subtitle">
+                    Financial Overview
+                </div>
+            </div>
+            <!-- =========================================
+                 1. LIQUID ASSETS
+                 ========================================= -->
+            <div class="finance-section">
+                <button
+                    class="finance-section-button"
+                    data-panel="finance-liquid-panel"
+                    type="button"
+                >
+                    <span>
+                        1. Ликвидные средства
+                    </span>
+                    <span class="finance-section-value">
+                        ${formatMoney(
+                            financeState.liquidAssets
+                        )} ₽
+                    </span>
+                </button>
+                <div
+                    id="finance-liquid-panel"
+                    class="finance-panel"
+                >
+                    <div class="finance-panel-content">
+                        <div class="finance-description">
+                            Деньги, которыми вы можете
+                            воспользоваться сейчас.
+                        </div>
+                        <input
+                            id="finance-liquid-input"
+                            class="finance-input"
+                            type="number"
+                            min="0"
+                            step="100"
+                            value="${financeState.liquidAssets || ""}"
+                            placeholder="Введите сумму"
+                        />
+                        <button
+                            class="finance-save-button"
+                            data-save-field="liquidAssets"
+                            data-input-id="finance-liquid-input"
+                            type="button"
+                        >
+                            Сохранить
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- =========================================
+                 2. ESSENTIAL EXPENSES
+                 ========================================= -->
+            <div class="finance-section">
+                <button
+                    class="finance-section-button"
+                    data-panel="finance-expenses-panel"
+                    type="button"
+                >
+                    <span>
+                        2. Обязательные расходы
+                    </span>
+                    <span class="finance-section-value">
+                        ${formatMoney(
+                            financeState.essentialExpenses
+                        )} ₽ / мес.
+                    </span>
+                </button>
+                <div
+                    id="finance-expenses-panel"
+                    class="finance-panel"
+                >
+                    <div class="finance-panel-content">
+                        <div class="finance-description">
+                            Минимальная сумма,
+                            необходимая для поддержания
+                            текущего уровня жизни.
+                        </div>
+                        <input
+                            id="finance-expenses-input"
+                            class="finance-input"
+                            type="number"
+                            min="0"
+                            step="100"
+                            value="${financeState.essentialExpenses || ""}"
+                            placeholder="Введите сумму"
+                        />
+                        <button
+                            class="finance-save-button"
+                            data-save-field="essentialExpenses"
+                            data-input-id="finance-expenses-input"
+                            type="button"
+                        >
+                            Сохранить
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- =========================================
+                 3. INCOME
+                 ========================================= -->
+            <div class="finance-section">
+                <button
+                    class="finance-section-button"
+                    data-panel="finance-income-panel"
+                    type="button"
+                >
+                    <span>
+                        3. Доход
+                    </span>
+                    <span class="finance-section-value">
+                        ${formatMoney(
+                            financeState.currentIncome
+                        )} ₽
+                    </span>
+                </button>
+                <div
+                    id="finance-income-panel"
+                    class="finance-panel"
+                >
+                    <div class="finance-panel-content">
+                        <div class="finance-description">
+                            Добавьте доход за месяц.
+                            Он автоматически попадёт
+                            в статистику доходов.
+                        </div>
+                        <input
+                            id="finance-income-month"
+                            class="finance-input"
+                            type="month"
+                            value="${new Date()
+                                .toISOString()
+                                .slice(0, 7)}"
+                        />
+                        <input
+                            id="finance-income-input"
+                            class="finance-input"
+                            type="number"
+                            min="0"
+                            step="100"
+                            placeholder="Введите доход"
+                        />
+                        <button
+                            class="finance-save-button"
+                            id="finance-add-income"
+                            type="button"
+                        >
+                            Добавить доход
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- =========================================
+                 4. FINANCIAL OBLIGATIONS
+                 ========================================= -->
+            <div class="finance-section">
+                <button
+                    class="finance-section-button"
+                    data-panel="finance-obligations-panel"
+                    type="button"
+                >
+                    <span>
+                        4. Финансовые обязательства
+                    </span>
+                    <span class="finance-section-value">
+                        ${formatMoney(
+                            financeState.financialObligations
+                        )} ₽ / мес.
+                    </span>
+                </button>
+                <div
+                    id="finance-obligations-panel"
+                    class="finance-panel"
+                >
+                    <div class="finance-panel-content">
+                        <div class="finance-description">
+                            Ежемесячные платежи
+                            по кредитам, займам
+                            и другим финансовым обязательствам.
+                        </div>
+                        <input
+                            id="finance-obligations-input"
+                            class="finance-input"
+                            type="number"
+                            min="0"
+                            step="100"
+                            value="${financeState.financialObligations || ""}"
+                            placeholder="Введите сумму"
+                        />
+                        <button
+                            class="finance-save-button"
+                            data-save-field="financialObligations"
+                            data-input-id="finance-obligations-input"
+                            type="button"
+                        >
+                            Сохранить
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- =========================================
+                 5. INCOME STATISTICS
+                 ========================================= -->
+            <div class="finance-section">
+                <button
+                    class="finance-section-button"
+                    data-panel="finance-statistics-panel"
+                    type="button"
+                >
+                    <span>
+                        5. Статистика доходов
+                    </span>
+                    <span class="finance-section-value">
+                        ${statistics.months} мес.
+                    </span>
+                </button>
+                <div
+                    id="finance-statistics-panel"
+                    class="finance-panel"
+                >
+                    <div class="finance-panel-content">
+                        <div class="finance-stat-grid">
+                            <div class="finance-stat-card">
+                                <span>
+                                    Всего
+                                </span>
+                                <strong>
+                                    ${formatMoney(
+                                        statistics.total
+                                    )} ₽
+                                </strong>
+                            </div>
+                            <div class="finance-stat-card">
+                                <span>
+                                    Средний доход
+                                </span>
+                                <strong>
+                                    ${formatMoney(
+                                        statistics.average
+                                    )} ₽
+                                </strong>
+                            </div>
+                            <div class="finance-stat-card">
+                                <span>
+                                    Минимум
+                                </span>
+                                <strong>
+                                    ${formatMoney(
+                                        statistics.minimum
+                                    )} ₽
+                                </strong>
+                            </div>
+                            <div class="finance-stat-card">
+                                <span>
+                                    Максимум
+                                </span>
+                                <strong>
+                                    ${formatMoney(
+                                        statistics.maximum
+                                    )} ₽
+                                </strong>
+                            </div>
+                        </div>
+                        <div class="finance-history">
+                            <div class="finance-history-title">
+                                История
+                            </div>
+                            ${renderIncomeHistory()}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- =========================================
+                 6. FINANCIAL STABILITY
+                 ========================================= -->
+            <div class="finance-stability">
+                <div class="finance-stability-header">
+                    <div>
+                        <div class="finance-stability-title">
+                            6. Финансовая стабильность
+                        </div>
+                        <div class="finance-stability-subtitle">
+                            Financial Stability Score
+                        </div>
+                    </div>
+                    <div class="finance-stability-score">
+                        ${
+                            stability.score !== null
+                                ? stability.score
+                                : "—"
+                        }
+                        <span>/100</span>
+                    </div>
+                </div>
+                <div class="finance-stability-status">
+                    ${
+                        status.label
+                    }
+                </div>
+                <div class="finance-stability-components">
+                    <div class="finance-stability-row">
+                        <span>
+                            Ликвидность
+                        </span>
+                        <strong>
+                            ${renderScore(
+                                stability.components.liquidity
+                            )}
+                        </strong>
+                    </div>
+                    <div class="finance-stability-row">
+                        <span>
+                            Денежный поток
+                        </span>
+                        <strong>
+                            ${renderScore(
+                                stability.components.cashFlow
+                            )}
+                        </strong>
+                    </div>
+                    <div class="finance-stability-row">
+                        <span>
+                            Долговая нагрузка
+                        </span>
+                        <strong>
+                            ${renderScore(
+                                stability.components.debt
+                            )}
+                        </strong>
+                    </div>
+                    <div class="finance-stability-row">
+                        <span>
+                            Стабильность дохода
+                        </span>
+                        <strong>
+                            ${renderScore(
+                                stability.components.incomeStability
+                            )}
+                        </strong>
+                    </div>
+                    <div class="finance-stability-row">
+                        <span>
+                            Чистый капитал
+                        </span>
+                        <strong>
+                            ${renderScore(
+                                stability.components.netWorth
+                            )}
+                        </strong>
+                    </div>
+                </div>
+                <div class="finance-stability-info">
+                    <div>
+                        Ликвидность — 30%
+                    </div>
+                    <div>
+                        Денежный поток — 25%
+                    </div>
+                    <div>
+                        Долговая нагрузка — 20%
+                    </div>
+                    <div>
+                        Стабильность дохода — 15%
+                    </div>
+                    <div>
+                        Чистый капитал — 10%
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    bindFinanceEvents();
 }
-
-
 /* =========================================================
    EVENTS
    ========================================================= */
-
-function bindEvents(
-    container
-) {
-
-    container.addEventListener(
-        "click",
-        event => {
-
-            const action =
-                event.target.closest(
-                    "[data-action]"
+function bindFinanceEvents() {
+    /*
+     * Accordion buttons
+     */
+    document
+        .querySelectorAll(
+            ".finance-section-button"
+        )
+        .forEach(
+            button => {
+                button.addEventListener(
+                    "click",
+                    () => {
+                        toggleFinancePanel(
+                            button.dataset.panel
+                        );
+                    }
                 );
-
-
-            if (action) {
-
-                const type =
-                    action.dataset.action;
-
-
-                if (
-                    type ===
-                    "toggle-accordion"
-                ) {
-
-                    toggleAccordion(
-                        action
-                    );
-
-                    return;
-                }
-
-
-                if (
-                    type ===
-                    "edit-income"
-                ) {
-
-                    editIncome();
-
-                    return;
-                }
-
-
-                if (
-                    type ===
-                    "edit-goal"
-                ) {
-
-                    editGoal();
-
-                    return;
-                }
-
-
-                if (
-                    type ===
-                    "edit-reserve"
-                ) {
-
-                    editReserve();
-
-                    return;
-                }
-
-
-                if (
-                    type ===
-                    "add-expense"
-                ) {
-
-                    openExpenseModal();
-
-                    return;
-                }
-
-
-                if (
-                    type ===
-                    "statistics-period"
-                ) {
-
-                    cycleStatisticsPeriod(
-                        container
-                    );
-
-                    return;
-                }
-
-
-                if (
-                    type ===
-                    "statistics-sort"
-                ) {
-
-                    cycleStatisticsSort(
-                        container
-                    );
-
-                    return;
-                }
-
             }
-
-
-            const deleteButton =
-                event.target.closest(
-                    "[data-delete-expense]"
-                );
-
-
-            if (
-                deleteButton
-            ) {
-
-                deleteExpense(
-                    deleteButton.dataset.id
-                );
-
-            }
-
-        }
-    );
-}
-
-
-/* =========================================================
-   ACCORDION TOGGLE
-   ========================================================= */
-
-function toggleAccordion(
-    button
-) {
-
-    const id =
-        button.dataset
-            .accordionId;
-
-
-    const card =
-        button.closest(
-            `[data-accordion="${id}"]`
         );
-
-
-    if (!card) {
-        return;
+    /*
+     * Save buttons
+     */
+    document
+        .querySelectorAll(
+            ".finance-save-button"
+        )
+        .forEach(
+            button => {
+                button.addEventListener(
+                    "click",
+                    () => {
+                        const field =
+                            button.dataset
+                                .saveField;
+                        const input =
+                            document.getElementById(
+                                button.dataset
+                                    .inputId
+                            );
+                        if (
+                            !field ||
+                            !input
+                        ) {
+                            return;
+                        }
+                        saveFinanceField(
+                            field,
+                            input
+                        );
+                    }
+                );
+            }
+        );
+    /*
+     * Add income
+     */
+    const addIncomeButton =
+        document.getElementById(
+            "finance-add-income"
+        );
+    if (addIncomeButton) {
+        addIncomeButton.addEventListener(
+            "click",
+            addIncomeEntry
+        );
     }
-
-
-    const isOpen =
-        card.classList.contains(
-            "open"
-        );
-
-
-    card.classList.toggle(
-        "open",
-        !isOpen
-    );
-
-
-    button.setAttribute(
-        "aria-expanded",
-        String(!isOpen)
-    );
-}
-
-
-/* =========================================================
-   STATISTICS PERIOD
-   ========================================================= */
-
-function cycleStatisticsPeriod(
-    container
-) {
-
-    nextStatisticsMode();
-
-    renderFinance(
-        container
-    );
-
-    requestAnimationFrame(() => {
-
-        const statisticsCard =
-            container.querySelector(
-                '[data-accordion="statistics"]'
-            );
-
-        if (
-            statisticsCard
-        ) {
-
-            const button =
-                statisticsCard.querySelector(
-                    "[data-action='toggle-accordion']"
-                );
-
-            const isOpen =
-                statisticsCard.classList.contains(
-                    "open"
-                );
-
-            if (!isOpen && button) {
-
-                button.click();
-
-            }
-
-        }
-
-    });
-}
-
-
-/* =========================================================
-   STATISTICS SORT
-   ========================================================= */
-
-function cycleStatisticsSort(
-    container
-) {
-
-    nextStatisticsSortMode();
-
-    renderFinance(
-        container
-    );
-
-    requestAnimationFrame(() => {
-
-        const statisticsCard =
-            container.querySelector(
-                '[data-accordion="statistics"]'
-            );
-
-        if (
-            statisticsCard
-        ) {
-
-            statisticsCard.classList.add(
-                "open"
-            );
-
-            const button =
-                statisticsCard.querySelector(
-                    "[data-action='toggle-accordion']"
-                );
-
-            if (button) {
-
-                button.setAttribute(
-                    "aria-expanded",
-                    "true"
-                );
-
-            }
-
-        }
-
-    });
-}
-
-
-/* =========================================================
-   SWIPE SYSTEM
-   ========================================================= */
-
-function initExpenseSwipe(
-    container
-) {
-
-    const rows =
-        container.querySelectorAll(
-            ".lg-finance-expense-swipe"
-        );
-
-
-    rows.forEach(
-        swipeContainer => {
-
-            const row =
-                swipeContainer.querySelector(
-                    "[data-swipe-row]"
-                );
-
-
-            if (!row) {
-                return;
-            }
-
-
-            let startX = 0;
-            let startY = 0;
-
-            let currentX = 0;
-
-            let dragging = false;
-
-            let moved = false;
-
-
-            const DELETE_DISTANCE =
-                70;
-
-            const MAX_DISTANCE =
-                88;
-
-
-            function closeRow() {
-
-                row.classList.remove(
-                    "swiped"
-                );
-
-            }
-
-
-            function openRow() {
-
-                row.classList.add(
-                    "swiped"
-                );
-
-            }
-
-
-            function setPosition(
-                distance
-            ) {
-
-                const value =
-                    Math.max(
-                        0,
-                        Math.min(
-                            MAX_DISTANCE,
-                            distance
-                        )
-                    );
-
-                row.style.transform =
-                    `translateX(-${value}px)`;
-
-            }
-
-
-            function resetPosition() {
-
-                row.style.transform = "";
-
-            }
-
-
-            row.addEventListener(
-                "pointerdown",
-                event => {
-
-                    if (
-                        event.button !== undefined &&
-                        event.button !== 0
-                    ) {
-                        return;
-                    }
-
-
-                    startX =
-                        event.clientX;
-
-                    startY =
-                        event.clientY;
-
-                    currentX =
-                        startX;
-
-                    dragging =
-                        true;
-
-                    moved =
-                        false;
-
-                    row.style.transition =
-                        "none";
-
-
-                    try {
-
-                        row.setPointerCapture(
-                            event.pointerId
-                        );
-
-                    } catch (_) {}
-
-                }
-            );
-
-
-            row.addEventListener(
-                "pointermove",
-                event => {
-
-                    if (!dragging) {
-                        return;
-                    }
-
-
-                    currentX =
-                        event.clientX;
-
-
-                    const deltaX =
-                        currentX -
-                        startX;
-
-                    const deltaY =
-                        event.clientY -
-                        startY;
-
-
-                    if (
-                        Math.abs(deltaY) >
-                        Math.abs(deltaX)
-                    ) {
-
-                        return;
-
-                    }
-
-
-                    if (
-                        Math.abs(deltaX) >
-                        8
-                    ) {
-
-                        moved =
-                            true;
-
-                    }
-
-
-                    if (
-                        deltaX < 0
-                    ) {
-
-                        setPosition(
-                            Math.abs(deltaX)
-                        );
-
-                    }
-
-                    else if (
-                        row.classList.contains(
-                            "swiped"
-                        )
-                    ) {
-
-                        setPosition(
-                            MAX_DISTANCE -
-                            Math.min(
-                                MAX_DISTANCE,
-                                deltaX
+    /*
+     * Delete income entries
+     */
+    document
+        .querySelectorAll(
+            "[data-delete-income]"
+        )
+        .forEach(
+            button => {
+                button.addEventListener(
+                    "click",
+                    () => {
+                        deleteIncomeEntry(
+                            Number(
+                                button.dataset
+                                    .deleteIncome
                             )
                         );
-
                     }
-
-                }
-            );
-
-
-            row.addEventListener(
-                "pointerup",
-                event => {
-
-                    if (!dragging) {
-                        return;
-                    }
-
-
-                    dragging =
-                        false;
-
-
-                    row.style.transition =
-                        "";
-
-
-                    const deltaX =
-                        currentX -
-                        startX;
-
-
-                    if (
-                        Math.abs(deltaX) <
-                        10
-                    ) {
-
-                        resetPosition();
-
-                        return;
-
-                    }
-
-
-                    if (
-                        deltaX < 0
-                    ) {
-
-                        if (
-                            Math.abs(deltaX) >=
-                            DELETE_DISTANCE
-                        ) {
-
-                            openRow();
-
-                        }
-
-                        else {
-
-                            closeRow();
-
-                        }
-
-                    }
-
-                    else {
-
-                        closeRow();
-
-                    }
-
-
-                    try {
-
-                        row.releasePointerCapture(
-                            event.pointerId
-                        );
-
-                    } catch (_) {}
-
-                }
-            );
-
-
-            row.addEventListener(
-                "pointercancel",
-                () => {
-
-                    dragging =
-                        false;
-
-                    row.style.transition =
-                        "";
-
-                    resetPosition();
-
-                }
-            );
-
-
-            row.addEventListener(
-                "click",
-                () => {
-
-                    if (moved) {
-                        return;
-                    }
-
-
-                    rows.forEach(
-                        other => {
-
-                            if (
-                                other !==
-                                swipeContainer
-                            ) {
-
-                                const otherRow =
-                                    other.querySelector(
-                                        "[data-swipe-row]"
-                                    );
-
-                                if (otherRow) {
-
-                                    otherRow.classList
-                                        .remove(
-                                            "swiped"
-                                        );
-
-                                }
-
-                            }
-
-                        }
-                    );
-
-                }
-            );
-
-        }
-    );
-}
-
-
-/* =========================================================
-   EDIT INCOME
-   ========================================================= */
-
-function editIncome() {
-
-    const {
-        data,
-        month
-    } =
-        getFinanceData();
-
-
-    openModal({
-
-        label:
-            "MONTHLY INCOME",
-
-        title:
-            "Update income",
-
-        value:
-            month.income || "",
-
-        placeholder:
-            "0",
-
-        onSave:
-            value => {
-
-                month.income =
-                    value;
-
-                saveDailySnapshot(
-                    data,
-                    month
                 );
-
-                saveFinanceData(
-                    data
-                );
-
-                renderFinance(
-                    getFinanceContainer()
-                );
-
             }
-
-    });
-}
-
-
-/* =========================================================
-   EDIT GOAL
-   ========================================================= */
-
-function editGoal() {
-
-    const {
-        data,
-        month
-    } =
-        getFinanceData();
-
-
-    openModal({
-
-        label:
-            "MONTHLY GOAL",
-
-        title:
-            "Set income goal",
-
-        value:
-            month.incomeGoal || "",
-
-        placeholder:
-            "100000",
-
-        onSave:
-            value => {
-
-                month.incomeGoal =
-                    value;
-
-                saveDailySnapshot(
-                    data,
-                    month
-                );
-
-                saveFinanceData(
-                    data
-                );
-
-                renderFinance(
-                    getFinanceContainer()
-                );
-
-            }
-
-    });
-}
-
-
-/* =========================================================
-   EDIT RESERVE
-   ========================================================= */
-
-function editReserve() {
-
-    const {
-        data,
-        month
-    } =
-        getFinanceData();
-
-
-    openModal({
-
-        label:
-            "FINANCIAL RESERVE",
-
-        title:
-            "Set reserve",
-
-        value:
-            month.reserve || "",
-
-        placeholder:
-            "0",
-
-        onSave:
-            value => {
-
-                month.reserve =
-                    value;
-
-                saveDailySnapshot(
-                    data,
-                    month
-                );
-
-                saveFinanceData(
-                    data
-                );
-
-                renderFinance(
-                    getFinanceContainer()
-                );
-
-            }
-
-    });
-}
-
-
-/* =========================================================
-   DELETE EXPENSE
-   ========================================================= */
-
-function deleteExpense(
-    id
-) {
-
-    if (!id) {
-        return;
-    }
-
-
-    const {
-        data,
-        month
-    } =
-        getFinanceData();
-
-
-    month.expenses =
-        (
-            Array.isArray(
-                month.expenses
-            )
-                ? month.expenses
-                : []
-        ).filter(
-            expense =>
-                expense.id !== id
         );
-
-
-    saveDailySnapshot(
-        data,
-        month
-    );
-
-
-    data.months[
-        data.currentMonth
-    ] = month;
-
-
-    saveFinanceData(
-        data
-    );
-
-
-    renderFinance(
-        getFinanceContainer(),
-        true
-    );
 }
-
-
 /* =========================================================
-   INIT
+   INITIALIZATION
    ========================================================= */
-
 function initFinance() {
-
-    injectStyles();
-
-
     const container =
-        getFinanceContainer();
-
-
-    if (!container) {
-
-        console.error(
-            "LIFE GAME Finance: " +
-            "finance container not found."
+        document.getElementById(
+            "finance-container"
         );
-
+    if (!container) {
+        console.error(
+            "LIFE GAME: Finance container не найден."
+        );
         return;
     }
-
-
-    try {
-
-        getFinanceData();
-
-        renderFinance(
-            container
-        );
-
-        console.log(
-            "LIFE GAME Finance initialized."
-        );
-
-    } catch (error) {
-
-        console.error(
-            "LIFE GAME Finance error:",
-            error
-        );
-
-        container.innerHTML = `
-
-            <div
-                class="lg-finance"
-            >
-
-                <div
-                    class="lg-finance-card"
-                >
-
-                    <div
-                        class="
-                            lg-finance-card-inner
-                        "
-                    >
-
-                        <div
-                            class="
-                                lg-finance-card-label
-                            "
-                        >
-                            FINANCE SYSTEM
-                        </div>
-
-                        <div
-                            style="
-                                margin-top:12px;
-                                color:
-                                rgba(255,255,255,.6);
-                                font-size:11px;
-                            "
-                        >
-                            Не удалось загрузить
-                            финансовый модуль.
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        `;
-
-    }
-
+    renderFinance();
+    console.log(
+        "LIFE GAME: Finance module работает."
+    );
 }
-
-
 /* =========================================================
-   EXPORT
+   PUBLIC API
    ========================================================= */
-
 export {
-    initFinance
+    initFinance,
+    calculateFinancialStability,
+    getIncomeStatistics
 };
