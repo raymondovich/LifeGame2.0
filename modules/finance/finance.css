@@ -1,4 +1,101 @@
-
+/* ============================================================
+   LIFE GAME 2.0
+   FINANCE — PREMIUM FINANCE UI v2
+   Design direction:
+   Private Financial Intelligence
+   Wealth Management / Premium Terminal
+   IMPORTANT:
+   This file contains ONLY visual styling.
+   No financial logic is handled here.
+   ============================================================ */
+/* ============================================================
+   01. DESIGN TOKENS
+   ============================================================ */
+#finance-container {
+    --finance-bg: #050505;
+    --finance-surface: #0a0a0a;
+    --finance-surface-2: #0d0d0d;
+    --finance-surface-3: #111111;
+    --finance-border:
+        rgba(255, 255, 255, 0.075);
+    --finance-border-soft:
+        rgba(255, 255, 255, 0.045);
+    --finance-border-strong:
+        rgba(255, 255, 255, 0.14);
+    --finance-primary: #f2f2f0;
+    --finance-secondary: #a1a19d;
+    --finance-muted: #676763;
+    --finance-dim: #3f3f3c;
+    --finance-positive: #9fae9c;
+    --finance-attention: #a99f88;
+    --finance-radius-sm: 9px;
+    --finance-radius-md: 13px;
+    --finance-radius-lg: 19px;
+    --finance-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.32);
+    --finance-ease:
+        cubic-bezier(.22, .61, .36, 1);
+    width: 100%;
+}
+/* ============================================================
+   02. BASE
+   ============================================================ */
+.finance-module {
+    width: 100%;
+    max-width: 780px;
+    margin: 0 auto;
+    padding:
+        18px
+        0
+        70px;
+    color: var(--finance-primary);
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "SF Pro Display",
+        "SF Pro Text",
+        Inter,
+        Helvetica,
+        Arial,
+        sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+/* ============================================================
+   03. TOP HEADER
+   ============================================================ */
+.finance-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 38px;
+}
+.finance-eyebrow {
+    margin:
+        0
+        0
+        10px;
+    color:
+        var(--finance-dim);
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 2.4px;
+    line-height: 1;
+    text-transform: uppercase;
+}
+.finance-title {
+    margin: 0;
+    color:
+        var(--finance-primary);
+    font-size: 35px;
+    font-weight: 600;
+    letter-spacing: -1.7px;
+    line-height: 1;
+}
+/* ============================================================
+   04. SECTION LABEL
+   ============================================================ */
+.finance-section-label {
     display: flex;
     align-items: center;
     margin:
@@ -14,88 +111,41 @@
     text-transform: uppercase;
 }
 /* ============================================================
-   05. DATA LIST — LIQUID FUNDS
-   Premium financial dashboard treatment.
+   05. DATA LIST
    ============================================================ */
 .finance-list {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    overflow: visible;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
+    gap: 1px;
+    overflow: hidden;
+    border:
+        1px solid
+        var(--finance-border-soft);
+    border-radius:
+        var(--finance-radius-md);
+    background:
+        var(--finance-border-soft);
 }
 /* ============================================================
-   06. DATA CARD — PREMIUM SURFACE
+   06. DATA CARD
    ============================================================ */
 .finance-card {
     position: relative;
     overflow: hidden;
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.075);
-    border-radius:
-        var(--finance-radius-lg);
+    border: 0;
+    border-radius: 0;
     background:
-        linear-gradient(
-            145deg,
-            rgba(255, 255, 255, 0.030) 0%,
-            rgba(255, 255, 255, 0.012) 42%,
-            rgba(0, 0, 0, 0.10) 100%
-        ),
-        #090909;
-    box-shadow:
-        0 14px 42px rgba(0, 0, 0, 0.22);
+        var(--finance-surface);
     transition:
-        background 220ms var(--finance-ease),
-        border-color 220ms ease,
-        box-shadow 220ms ease,
-        transform 220ms var(--finance-ease);
-}
-.finance-card::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 12%;
-    right: 12%;
-    height: 1px;
-    background:
-        linear-gradient(
-            90deg,
-            transparent,
-            rgba(255,255,255,0.105),
-            transparent
-        );
-    pointer-events: none;
+        background 220ms var(--finance-ease);
 }
 .finance-card:hover {
-    border-color:
-        rgba(255, 255, 255, 0.105);
     background:
-        linear-gradient(
-            145deg,
-            rgba(255, 255, 255, 0.038) 0%,
-            rgba(255, 255, 255, 0.014) 46%,
-            rgba(0, 0, 0, 0.08) 100%
-        ),
-        #0a0a0a;
-    box-shadow:
-        0 17px 48px rgba(0, 0, 0, 0.27);
+        var(--finance-surface-2);
 }
 .finance-card.is-open {
-    border-color:
-        rgba(255, 255, 255, 0.13);
     background:
-        linear-gradient(
-            145deg,
-            rgba(255, 255, 255, 0.042) 0%,
-            rgba(255, 255, 255, 0.016) 46%,
-            rgba(0, 0, 0, 0.09) 100%
-        ),
-        #0a0a0a;
-    box-shadow:
-        0 18px 52px rgba(0, 0, 0, 0.30);
+        var(--finance-surface-2);
 }
 /* ============================================================
    07. CARD HEADER
@@ -103,17 +153,17 @@
 .finance-card-header {
     position: relative;
     width: 100%;
-    min-height: 92px;
+    min-height: 79px;
     display: grid;
     grid-template-columns:
-        38px
+        36px
         minmax(0, 1fr)
-        30px;
+        28px;
     align-items: center;
-    gap: 16px;
+    gap: 15px;
     padding:
-        17px
-        19px;
+        13px
+        18px;
     border: 0;
     outline: none;
     background: transparent;
@@ -125,59 +175,53 @@
 .finance-card-header::after {
     content: "";
     position: absolute;
-    left: 73px;
-    right: 19px;
+    left: 69px;
+    right: 18px;
     bottom: 0;
     height: 1px;
     background:
-        rgba(255, 255, 255, 0.045);
-    opacity: 0;
+        var(--finance-border-soft);
     transition:
         opacity 180ms ease;
 }
-.finance-card.is-open
+.finance-card:last-child
 .finance-card-header::after {
-    opacity: 1;
+    opacity: 0;
 }
 .finance-card-header:active {
     background:
-        rgba(255, 255, 255, 0.014);
+        rgba(255, 255, 255, 0.018);
 }
 /* ============================================================
    08. INDEX
    ============================================================ */
 .finance-card-index {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
     color:
-        #575753;
+        var(--finance-dim);
     font-size: 8px;
     font-weight: 700;
-    letter-spacing: 0.8px;
+    letter-spacing: 0.7px;
     border:
         1px solid
-        rgba(255, 255, 255, 0.075);
-    border-radius: 10px;
+        var(--finance-border-soft);
+    border-radius: 8px;
     background:
-        rgba(255, 255, 255, 0.012);
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.025);
+        rgba(255, 255, 255, 0.008);
     transition:
         border-color 180ms ease,
-        color 180ms ease,
-        background 180ms ease;
+        color 180ms ease;
 }
 .finance-card.is-open
 .finance-card-index {
     border-color:
-        rgba(255, 255, 255, 0.16);
+        var(--finance-border-strong);
     color:
-        #b0b0ab;
-    background:
-        rgba(255, 255, 255, 0.025);
+        var(--finance-secondary);
 }
 /* ============================================================
    09. CARD MAIN
@@ -186,15 +230,15 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 7px;
+    gap: 5px;
 }
 .finance-card-title {
     overflow: hidden;
     color:
-        #e4e4e0;
-    font-size: 14px;
-    font-weight: 560;
-    letter-spacing: -0.15px;
+        #dededb;
+    font-size: 13px;
+    font-weight: 540;
+    letter-spacing: -0.1px;
     line-height: 1.2;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -202,53 +246,39 @@
 .finance-card-value {
     overflow: hidden;
     color:
-        #777772;
+        var(--finance-muted);
     font-size: 10px;
-    font-weight: 500;
-    letter-spacing: 0.15px;
+    font-weight: 450;
+    letter-spacing: 0;
     line-height: 1.2;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-variant-numeric:
-        tabular-nums;
 }
 /* ============================================================
    10. CHEVRON
    ============================================================ */
 .finance-card-chevron {
-    width: 30px;
-    height: 30px;
+    width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
     color:
-        #444440;
-    border:
-        1px solid
-        rgba(255, 255, 255, 0.045);
-    border-radius: 50%;
-    background:
-        rgba(255, 255, 255, 0.008);
+        #373735;
     transition:
         transform 280ms var(--finance-ease),
-        color 180ms ease,
-        border-color 180ms ease,
-        background 180ms ease;
+        color 180ms ease;
 }
 .finance-card-chevron svg {
-    width: 13px;
-    height: 13px;
+    width: 14px;
+    height: 14px;
 }
 .finance-card.is-open
 .finance-card-chevron {
     transform:
         rotate(90deg);
     color:
-        #a5a5a0;
-    border-color:
-        rgba(255, 255, 255, 0.12);
-    background:
-        rgba(255, 255, 255, 0.018);
+        #858581;
 }
 /* ============================================================
    11. DRAWER
@@ -849,33 +879,30 @@ input[type="month"]::-webkit-calendar-picker-indicator {
         letter-spacing: -1.5px;
     }
     .finance-list {
-        gap: 9px;
-        border-radius: 0;
-    }
-    .finance-card {
-        border-radius: 16px;
+        border-radius:
+            12px;
     }
     .finance-card-header {
-        min-height: 82px;
+        min-height: 74px;
         grid-template-columns:
-            34px
+            32px
             minmax(0, 1fr)
-            28px;
+            25px;
         gap: 13px;
         padding:
-            14px
-            15px;
+            11px
+            14px;
     }
     .finance-card-header::after {
-        left: 62px;
-        right: 15px;
+        left: 59px;
+        right: 14px;
     }
     .finance-card-index {
-        width: 30px;
-        height: 30px;
+        width: 29px;
+        height: 29px;
     }
     .finance-card-title {
-        font-size: 12.5px;
+        font-size: 12px;
     }
     .finance-card-value {
         font-size: 9px;
@@ -928,30 +955,20 @@ input[type="month"]::-webkit-calendar-picker-indicator {
     .finance-title {
         font-size: 29px;
     }
-    .finance-list {
-        gap: 8px;
-    }
-    .finance-card {
-        border-radius: 14px;
-    }
     .finance-card-header {
         grid-template-columns:
-            30px
+            29px
             minmax(0, 1fr)
-            26px;
+            23px;
         gap: 10px;
-        padding:
-            13px
-            13px;
     }
     .finance-card-index {
-        width: 28px;
-        height: 28px;
+        width: 27px;
+        height: 27px;
         font-size: 7px;
     }
     .finance-card-header::after {
-        left: 56px;
-        right: 13px;
+        left: 52px;
     }
     .finance-drawer-inner {
         padding-left: 52px;
