@@ -140,146 +140,465 @@ function previousPeriodDate(
    DEFAULT DATA
    ========================================================= */
 function defaultMonth() {
+
     return {
         income: 0,
         incomeGoal: 0,
+
+        /*
+         * История фактически заработанных денег.
+         *
+         * Каждый доход хранится отдельной записью.
+         * Дата имеет значение для статистики.
+         */
+
+        incomeEntries: [],
+
         expenses: [],
+
         reserve: 0
-    };
-}
-function defaultLiquidFunds() {
-    return {
-        assets: [
-            {
-                id: "cash",
-                name: "Наличные",
-                amount: 0,
-                system: true
-            },
-            {
-                id: "cards",
-                name: "Деньги на картах",
-                amount: 0,
-                system: true
-            },
-            {
-                id: "bank",
-                name: "Банковские счета",
-                amount: 0,
-                system: true
-            }
-        ],
-        snapshots: [],
-        selectedPeriod: "month"
     };
 }
 /* =========================================================
    FINANCE DATA
    ========================================================= */
 function getFinanceData() {
+
     const section =
         getSection("finance") || {};
+
     const stored =
         section.data || {};
+
     if (
         !stored.months ||
         typeof stored.months !== "object"
     ) {
         stored.months = {};
     }
+
     const monthKey =
         currentMonthKey();
+
+
+    /*
+     * Создаём текущий месяц,
+     * если его ещё нет.
+     */
+
     if (
         !stored.months[monthKey]
     ) {
+
         stored.months[monthKey] =
             defaultMonth();
+
     }
+function currentMonthDateKey() {
+
+    const now =
+        new Date();
+
+    return `${now.getFullYear()}-${String(
+        now.getMonth() + 1
+    ).padStart(2, "0")}-${String(
+        now.getDate()
+    ).padStart(2, "0")}`;
+
+}
+
+    const month =
+        stored.months[monthKey];
+
+
     /*
-     * LIQUID FUNDS MIGRATION
+     * ============================================
+     * MIGRATION
+     * ============================================
      *
-     * Старые данные не ломаем.
+     * Старые версии Finance хранили доход
+     * непосредственно в:
+     *
+     * month.income
+     *
+     * Теперь источник данных —
+     * month.incomeEntries.
+     *
+     * Если пользователь уже пользовался
+     * приложением до внедрения новой системы,
+     * сохраняем его старый доход.
      */
-    if (
-        !stored.liquidFunds ||
-        typeof stored.liquidFunds !== "object"
-    ) {
-        stored.liquidFunds =
-            defaultLiquidFunds();
-    }
+
     if (
         !Array.isArray(
-            stored.liquidFunds.assets
+            month.incomeEntries
         )
     ) {
-        stored.liquidFunds.assets = [];
+
+        month.incomeEntries = [];
+
     }
-    if (
-        !Array.isArray(
-            stored.liquidFunds.snapshots
-        )
-    ) {
-        stored.liquidFunds.snapshots = [];
-    }
+
+
     /*
-     * Гарантируем наличие системных активов.
+     * Если старый income существует,
+     * но история ещё пустая —
+     * переносим старое значение
+     * на текущую дату.
      */
-    const systemAssets = [
+
+    if (
+        numberValue(month.income) > 0 &&
+        month.incomeEntries.length === 0
+    ) {
+
+        month.incomeEntries.push({
+
+            id:
+                createId(),
+
+            amount:
+                numberValue(
+                    month.income
+                ),
+
+            date:
+                currentMonthDateKey(),
+
+            createdAt:
+                new Date().toISOString()
+
+        });
+
+    }
+    function formatIncomeDate(dateKey) {
+
+    const parts =
+        String(dateKey || "").split("-");
+
+    if (parts.length !== 3) {
+        return dateKey;
+    }
+
+    const year =
+        Number(parts[0]);
+
+    const month =
+        Number(parts[1]);
+
+    const day =
+        Number(parts[2]);
+
+    if (
+        !year ||
+        !month ||
+        !day
+    ) {
+        return dateKey;
+    }
+
+    const date =
+        new Date(
+            year,
+            month - 1,
+            day
+        );
+
+    return new Intl.DateTimeFormat(
+        "en-US",
         {
-            id: "cash",
-            name: "Наличные",
-            system: true
-        },
-        {
-            id: "cards",
-            name: "Деньги на картах",
-            system: true
-        },
-        {
-            id: "bank",
-            name: "Банковские счета",
-            system: true
+            month: "long",
+            day: "numeric",
+            year: "numeric"
         }
-    ];
-    systemAssets.forEach(
-        systemAsset => {
-            const exists =
-                stored.liquidFunds.assets
-                    .some(
-                        asset =>
-                            asset.id ===
-                            systemAsset.id
-                    );
-            if (!exists) {
-                stored.liquidFunds.assets
-                    .unshift({
-                        ...systemAsset,
-                        amount: 0
-                    });
+    )
+        .format(date)
+        .toUpperCase();
+}
+function sortIncomeEntries(entries) 
+ function renderIncomeEntries(
+    entries
+) {
+
+    const sorted =
+        sortIncomeEntries(
+            entries
+        );
+
+
+    if (
+        sorted.length === 0
+    ) {
+
+        return `
+
+            <div
+                class="lg-finance-empty"
+            >
+                Пока доходов нет.
+            </div>
+
+        `;
+
+    }
+
+
+    return sorted
+        .map(entry => {
+
+            return `
+
+                <div
+                    class="
+                        lg-finance-income-entry
+                    "
+                    data-income-entry-id="${escapeHTML(
+                        entry.id
+                    )}"
+                >
+
+                    <div>
+
+                        <div
+                            class="
+                                lg-finance-income-entry-date
+                            "
+                        >
+                            ${escapeHTML(
+                                formatIncomeDate(
+                                    entry.date
+                                )
+                            )}
+                        </div>
+
+                        <div
+                            class="
+                                lg-finance-income-entry-time
+                            "
+                        >
+                            FACTUAL INCOME
+                        </div>
+
+                    </div>
+
+
+                    <div
+                        class="
+                            lg-finance-income-entry-amount
+                        "
+                    >
+                        +${money(
+                            entry.amount
+                        )}
+                    </div>
+
+                </div>
+
+            `;
+
+        })
+        .join("");
+
+}{
+
+    if (!Array.isArray(entries)) {
+        return [];
+    }
+
+    return [...entries].sort(
+        (a, b) => {
+
+            const dateA =
+                String(a.date || "");
+
+            const dateB =
+                String(b.date || "");
+
+            if (dateA !== dateB) {
+                return dateB.localeCompare(dateA);
             }
+
+            const createdA =
+                String(a.createdAt || "");
+
+            const createdB =
+                String(b.createdAt || "");
+
+            return createdB.localeCompare(
+                createdA
+            );
+
         }
     );
+
+}
+
+function incomeDateLimits() {
+
+    const today =
+        new Date();
+
+    today.setHours(
+        0,
+        0,
+        0,
+        0
+    );
+
+
+    const minimum =
+        new Date(today);
+
+    minimum.setDate(
+        minimum.getDate() - 3
+    );
+
+
+    const format =
+        date => {
+
+            return `${date.getFullYear()}-${String(
+                date.getMonth() + 1
+            ).padStart(2, "0")}-${String(
+                date.getDate()
+            ).padStart(2, "0")}`;
+
+        };
+
+
+    return {
+
+        min:
+            format(minimum),
+
+        max:
+            format(today)
+
+    };
+
+}
+
+
+function isIncomeDateAllowed(
+    dateKey
+) {
+
+    const limits =
+        incomeDateLimits();
+
+    return (
+        dateKey >= limits.min &&
+        dateKey <= limits.max
+    );
+
+}
+
+
+    /*
+     * ============================================
+     * NORMALIZE INCOME ENTRIES
+     * ============================================
+     *
+     * Защищаемся от повреждённых или старых данных.
+     */
+
+    month.incomeEntries =
+        month.incomeEntries
+            .filter(entry => {
+
+                if (!entry) {
+                    return false;
+                }
+
+                const amount =
+                    numberValue(
+                        entry.amount
+                    );
+
+                const date =
+                    String(
+                        entry.date || ""
+                    );
+
+                return (
+                    amount > 0 &&
+                    /^\d{4}-\d{2}-\d{2}$/
+                        .test(date)
+                );
+
+            })
+            .map(entry => {
+
+                return {
+
+                    id:
+                        entry.id ||
+                        createId(),
+
+                    amount:
+                        numberValue(
+                            entry.amount
+                        ),
+
+                    date:
+                        entry.date,
+
+                    createdAt:
+                        entry.createdAt ||
+                        new Date().toISOString()
+
+                };
+
+            });
+
+
+    /*
+     * ============================================
+     * RECALCULATE CURRENT INCOME
+     * ============================================
+     *
+     * income теперь является агрегированным
+     * значением всех доходов текущего месяца.
+     */
+
+    month.income =
+        month.incomeEntries.reduce(
+            (sum, entry) => {
+
+                return (
+                    sum +
+                    numberValue(
+                        entry.amount
+                    )
+                );
+
+            },
+            0
+        );
+
+
+    /*
+     * Текущий месяц сохраняется
+     * как активный месяц Finance.
+     */
+
     stored.currentMonth =
         monthKey;
+
+
     stored.version =
         FINANCE_VERSION;
+
+
     return {
-        data: stored,
-        month:
-            stored.months[monthKey],
-        liquidFunds:
-            stored.liquidFunds
+
+        data:
+            stored,
+
+        month
+
     };
-}
-function saveFinanceData(
-    data
-) {
-    updateSection(
-        "finance",
-        {
-            data
-        }
-    );
+
 }
 /* =========================================================
    LIQUID FUNDS CALCULATIONS
@@ -1406,27 +1725,37 @@ function openModal({
     placeholder = "",
     onSave
 }) {
+
     closeModal();
+
+
     const modal =
-        document.createElement(
-            "div"
-        );
+        document.createElement("div");
+
     modal.className =
         "lg-finance-modal active";
+
+
     modal.innerHTML = `
+
         <div
             class="lg-finance-modal-panel"
         >
+
             <div
                 class="lg-finance-modal-label"
             >
                 ${escapeHTML(label)}
             </div>
+
+
             <div
                 class="lg-finance-modal-title"
             >
                 ${escapeHTML(title)}
             </div>
+
+
             <input
                 class="lg-finance-input"
                 type="number"
@@ -1436,9 +1765,12 @@ function openModal({
                 value="${escapeHTML(value)}"
                 placeholder="${escapeHTML(placeholder)}"
             >
+
+
             <div
                 class="lg-finance-modal-buttons"
             >
+
                 <button
                     type="button"
                     class="lg-finance-modal-button"
@@ -1446,6 +1778,8 @@ function openModal({
                 >
                     CANCEL
                 </button>
+
+
                 <button
                     type="button"
                     class="
@@ -1456,26 +1790,40 @@ function openModal({
                 >
                     SAVE
                 </button>
+
             </div>
+
         </div>
+
     `;
+
+
     document.body.appendChild(
         modal
     );
+
+
     activeModal =
         modal;
+
+
     const input =
         modal.querySelector(
             ".lg-finance-input"
         );
-    requestAnimationFrame(
-        () => {
-            input.focus();
-            try {
-                input.select();
-            } catch (_) {}
-        }
-    );
+
+
+    requestAnimationFrame(() => {
+
+        input.focus();
+
+        try {
+            input.select();
+        } catch (_) {}
+
+    });
+
+
     modal
         .querySelector(
             "[data-modal-cancel]"
@@ -1484,6 +1832,8 @@ function openModal({
             "click",
             closeModal
         );
+
+
     modal
         .querySelector(
             "[data-modal-save]"
@@ -1491,25 +1841,67 @@ function openModal({
         .addEventListener(
             "click",
             () => {
+
                 const value =
                     numberValue(
                         input.value
                     );
-                onSave(
-                    value
-                );
+
+                onSave(value);
+
                 closeModal();
+
             }
         );
+
+
     modal.addEventListener(
         "click",
         event => {
+
             if (
                 event.target === modal
             ) {
+
                 closeModal();
+
             }
+
         }
+    );
+
+
+    input.addEventListener(
+        "keydown",
+        event => {
+
+            if (
+                event.key === "Enter"
+            ) {
+
+                event.preventDefault();
+
+                modal
+                    .querySelector(
+                        "[data-modal-save]"
+                    )
+                    .click();
+
+            }
+
+
+            if (
+                event.key === "Escape"
+            ) {
+
+                closeModal();
+
+            }
+
+        }
+    );
+
+}
     );
     input.addEventListener(
         "keydown",
@@ -2202,6 +2594,88 @@ function renderPeriodButton(
             ${label}
         </button>
     `;
+}
+/* ===============================================
+   INCOME HISTORY
+   =============================================== */
+
+.lg-finance-income-history {
+
+    margin-top:2px;
+
+    border-top:
+        1px solid
+        var(--f-border);
+
+}
+
+
+.lg-finance-income-entry {
+
+    min-height:58px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    gap:16px;
+
+    padding:
+        12px
+        0;
+
+    border-bottom:
+        1px solid
+        rgba(255,255,255,.055);
+
+}
+
+
+.lg-finance-income-entry-date {
+
+    color:
+        var(--f-soft);
+
+    font-size:10px;
+
+    font-weight:700;
+
+    letter-spacing:.02em;
+
+}
+
+
+.lg-finance-income-entry-time {
+
+    margin-top:4px;
+
+    color:
+        var(--f-dim);
+
+    font-size:6px;
+
+    font-weight:800;
+
+    letter-spacing:.13em;
+
+}
+
+
+.lg-finance-income-entry-amount {
+
+    flex-shrink:0;
+
+    color:
+        var(--f-white);
+
+    font-size:12px;
+
+    font-weight:800;
+
+    letter-spacing:-.02em;
+
 }
 /* =========================================================
    EXPENSE LIST
@@ -2904,6 +3378,37 @@ function renderFinance(
                         data-action="edit-income"
                     >
                         UPDATE INCOME
+                        <div
+    style="
+        margin-top:18px;
+    "
+>
+
+    <div
+        class="
+            lg-finance-card-label
+        "
+        style="
+            margin-bottom:10px;
+        "
+    >
+        INCOME HISTORY
+    </div>
+
+
+    <div
+        class="
+            lg-finance-income-history
+        "
+    >
+
+        ${renderIncomeEntries(
+            month.incomeEntries
+        )}
+
+    </div>
+
+</div>
                     </button>
                 </div>
             </section>
@@ -3961,35 +4466,315 @@ function initExpenseSwipe(
    EDIT INCOME
    ========================================================= */
 function editIncome() {
-    const {
-        data,
-        month
-    } =
-        getFinanceData();
-    openModal({
-        label:
-            "MONTHLY INCOME",
-        title:
-            "Update income",
-        value:
-            month.income || "",
-        placeholder:
-            "0",
-        onSave:
-            value => {
+
+    closeModal();
+
+
+    const limits =
+        incomeDateLimits();
+
+    const today =
+        currentMonthDateKey();
+
+
+    const modal =
+        document.createElement("div");
+
+    modal.className =
+        "lg-finance-modal active";
+
+
+    modal.innerHTML = `
+
+        <div
+            class="lg-finance-modal-panel"
+        >
+
+            <div
+                class="lg-finance-modal-label"
+            >
+                FACTUAL INCOME
+            </div>
+
+
+            <div
+                class="lg-finance-modal-title"
+            >
+                Add income
+            </div>
+
+
+            <input
+                class="lg-finance-input"
+                data-income-amount
+                type="number"
+                inputmode="decimal"
+                min="0"
+                step="1"
+                placeholder="Сумма ₽"
+            >
+
+
+            <div
+                class="
+                    lg-finance-card-label
+                "
+                style="
+                    margin-top:20px;
+                "
+            >
+                DATE
+            </div>
+
+
+            <input
+                class="lg-finance-input"
+                data-income-date
+                type="date"
+                min="${limits.min}"
+                max="${limits.max}"
+                value="${today}"
+            >
+
+
+            <div
+                style="
+                    margin-top:9px;
+                    color:rgba(255,255,255,.28);
+                    font-size:8px;
+                    line-height:1.5;
+                "
+            >
+                Можно добавить доход за сегодня
+                или максимум за 3 предыдущих дня.
+            </div>
+
+
+            <div
+                class="lg-finance-modal-buttons"
+            >
+
+                <button
+                    type="button"
+                    class="lg-finance-modal-button"
+                    data-modal-cancel
+                >
+                    CANCEL
+                </button>
+
+
+                <button
+                    type="button"
+                    class="
+                        lg-finance-modal-button
+                        lg-finance-modal-save
+                    "
+                    data-modal-save
+                >
+                    ADD
+                </button>
+
+            </div>
+
+        </div>
+
+    `;
+
+
+    document.body.appendChild(
+        modal
+    );
+
+
+    activeModal =
+        modal;
+
+
+    const amountInput =
+        modal.querySelector(
+            "[data-income-amount]"
+        );
+
+    const dateInput =
+        modal.querySelector(
+            "[data-income-date]"
+        );
+
+
+    requestAnimationFrame(() => {
+
+        amountInput.focus();
+
+    });
+
+
+    modal
+        .querySelector(
+            "[data-modal-cancel]"
+        )
+        .addEventListener(
+            "click",
+            closeModal
+        );
+
+
+    modal
+        .querySelector(
+            "[data-modal-save]"
+        )
+        .addEventListener(
+            "click",
+            () => {
+
+                const amount =
+                    numberValue(
+                        amountInput.value
+                    );
+
+                const date =
+                    dateInput.value;
+
+
+                if (
+                    amount <= 0
+                ) {
+
+                    amountInput.focus();
+
+                    return;
+
+                }
+
+
+                /*
+                 * Дополнительная проверка.
+                 *
+                 * Даже если пользователь вручную
+                 * изменит значение date input,
+                 * старую или будущую дату
+                 * сохранить невозможно.
+                 */
+
+                if (
+                    !isIncomeDateAllowed(
+                        date
+                    )
+                ) {
+
+                    dateInput.focus();
+
+                    return;
+
+                }
+
+
+                const {
+                    data,
+                    month
+                } =
+                    getFinanceData();
+
+
+                if (
+                    !Array.isArray(
+                        month.incomeEntries
+                    )
+                ) {
+
+                    month.incomeEntries = [];
+
+                }
+
+
+                month.incomeEntries.push({
+
+                    id:
+                        createId(),
+
+                    amount,
+
+                    date,
+
+                    createdAt:
+                        new Date().toISOString()
+
+                });
+
+
                 month.income =
-                    value;
+                    month.incomeEntries.reduce(
+                        (sum, entry) => {
+
+                            return (
+                                sum +
+                                numberValue(
+                                    entry.amount
+                                )
+                            );
+
+                        },
+                        0
+                    );
+
+
                 data.months[
                     data.currentMonth
                 ] = month;
+
+
                 saveFinanceData(
                     data
                 );
+
+
+                closeModal();
+
+
                 renderFinance(
                     getFinanceContainer()
                 );
+
             }
-    });
+        );
+
+
+    modal.addEventListener(
+        "click",
+        event => {
+
+            if (
+                event.target === modal
+            ) {
+
+                closeModal();
+
+            }
+
+        }
+    );
+
+
+    amountInput.addEventListener(
+        "keydown",
+        event => {
+
+            if (
+                event.key === "Enter"
+            ) {
+
+                event.preventDefault();
+
+                modal
+                    .querySelector(
+                        "[data-modal-save]"
+                    )
+                    .click();
+
+            }
+
+        }
+    );
+
 }
 /* =========================================================
    EDIT GOAL
