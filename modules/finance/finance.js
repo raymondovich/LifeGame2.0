@@ -3025,28 +3025,90 @@ function getFinanceContainer() {
 /* =========================================================
    EVENTS
    ========================================================= */
-function bindEvents(
-    container
-) {
+let financeEventsBound = false;
+
+function bindEvents(container) {
+
+    if (!container || financeEventsBound) {
+        return;
+    }
+
+    financeEventsBound = true;
+
     container.addEventListener(
         "click",
         event => {
+
             const action =
                 event.target.closest(
                     "[data-action]"
                 );
+
             if (action) {
+
                 const type =
                     action.dataset.action;
+
                 if (
                     type ===
                     "toggle-accordion"
                 ) {
-                    toggleAccordion(
-                        action
-                    );
+
+                    toggleAccordion(action);
                     return;
                 }
+
+                if (
+                    type ===
+                    "edit-income"
+                ) {
+
+                    editIncome();
+                    return;
+                }
+
+                if (
+                    type ===
+                    "edit-goal"
+                ) {
+
+                    editGoal();
+                    return;
+                }
+
+                if (
+                    type ===
+                    "edit-reserve"
+                ) {
+
+                    editReserve();
+                    return;
+                }
+
+                if (
+                    type ===
+                    "add-expense"
+                ) {
+
+                    openExpenseModal();
+                    return;
+                }
+            }
+
+            const deleteButton =
+                event.target.closest(
+                    "[data-delete-expense]"
+                );
+
+            if (deleteButton) {
+
+                deleteExpense(
+                    deleteButton.dataset.id
+                );
+            }
+        }
+    );
+}
                 if (
                     type ===
                     "edit-income"
