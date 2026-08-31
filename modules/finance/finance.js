@@ -3025,73 +3025,170 @@ function getFinanceContainer() {
 /* =========================================================
    EVENTS
    ========================================================= */
+/* =========================================================
+   EVENTS
+   ========================================================= */
+
 function bindEvents(
     container
 ) {
+
+    if (!container) {
+        return;
+    }
+
+    /*
+     * IMPORTANT:
+     *
+     * renderFinance() вызывается после изменения данных.
+     * Поэтому нельзя каждый раз добавлять новый
+     * click listener на тот же finance-container.
+     *
+     * Храним флаг непосредственно на DOM-контейнере.
+     */
+
+    if (
+        container.dataset
+            .financeEventsBound === "true"
+    ) {
+        return;
+    }
+
+    container.dataset
+        .financeEventsBound = "true";
+
+
     container.addEventListener(
         "click",
         event => {
+
+            /* =========================================
+               MAIN ACTIONS
+               ========================================= */
+
             const action =
                 event.target.closest(
                     "[data-action]"
                 );
+
+
             if (action) {
+
                 const type =
                     action.dataset.action;
+
+
+                /* =====================================
+                   ACCORDION
+                   ===================================== */
+
                 if (
                     type ===
                     "toggle-accordion"
                 ) {
+
                     toggleAccordion(
                         action
                     );
+
                     return;
                 }
+
+
+                /* =====================================
+                   INCOME
+                   ===================================== */
+
                 if (
                     type ===
                     "edit-income"
                 ) {
+
                     editIncome();
+
                     return;
                 }
+
+
+                /* =====================================
+                   GOAL
+                   ===================================== */
+
                 if (
                     type ===
                     "edit-goal"
                 ) {
+
                     editGoal();
+
                     return;
                 }
+
+
+                /* =====================================
+                   RESERVE
+                   ===================================== */
+
                 if (
                     type ===
                     "edit-reserve"
                 ) {
+
                     editReserve();
+
                     return;
                 }
+
+
+                /* =====================================
+                   EXPENSE
+                   ===================================== */
+
                 if (
                     type ===
                     "add-expense"
                 ) {
+
                     openExpenseModal();
+
                     return;
                 }
+
+
+                /* =====================================
+                   LIQUID ASSET — ADD
+                   ===================================== */
+
                 if (
                     type ===
                     "add-liquid-asset"
                 ) {
+
                     openAssetModal();
+
                     return;
                 }
+
+
+                /* =====================================
+                   LIQUID ASSET — EDIT
+                   ===================================== */
+
                 if (
                     type ===
                     "edit-liquid-asset"
                 ) {
+
                     const id =
                         action.dataset.id;
+
+
                     const {
                         liquidFunds
                     } =
                         getFinanceData();
+
+
                     const asset =
                         liquidFunds.assets
                             .find(
@@ -3099,75 +3196,142 @@ function bindEvents(
                                     item.id ===
                                     id
                             );
+
+
                     if (asset) {
+
                         openAssetModal(
                             asset
                         );
+
                     }
+
                     return;
                 }
+
+
+                /* =====================================
+                   LIQUID FUNDS — PERIOD
+                   ===================================== */
+
                 if (
                     type ===
                     "select-liquid-period"
                 ) {
+
                     selectLiquidPeriod(
                         action.dataset.period
                     );
+
                     return;
                 }
+
             }
+
+
+            /* =========================================
+               DELETE EXPENSE
+               ========================================= */
+
             const deleteExpenseButton =
                 event.target.closest(
                     "[data-delete-expense]"
                 );
+
+
             if (
                 deleteExpenseButton
             ) {
+
                 deleteExpense(
                     deleteExpenseButton.dataset.id
                 );
+
                 return;
             }
+
+
+            /* =========================================
+               DELETE LIQUID ASSET
+               ========================================= */
+
             const deleteAssetButton =
                 event.target.closest(
                     "[data-delete-asset]"
                 );
+
+
             if (
                 deleteAssetButton
             ) {
+
                 deleteLiquidAsset(
                     deleteAssetButton.dataset.id
                 );
+
                 return;
             }
+
+
+            /* =========================================
+               LIQUID ASSET ROW
+               ========================================= */
+
             const assetRow =
                 event.target.closest(
                     "[data-asset-swipe-row]"
                 );
+
+
             if (
                 assetRow
             ) {
+
                 const wrapper =
                     assetRow.closest(
                         "[data-asset-id]"
                     );
+
+
                 if (!wrapper) {
                     return;
                 }
+
+
+                /*
+                 * Системные активы:
+                 *
+                 * Наличные
+                 * Деньги на картах
+                 * Банковские счета
+                 *
+                 * Нельзя удалить или
+                 * переименовать.
+                 *
+                 * Можно изменить только сумму.
+                 */
+
                 if (
                     wrapper.dataset.system ===
                     "true"
                 ) {
+
                     editSystemAsset(
                         wrapper.dataset.assetId
                     );
+
                 }
+
                 else {
+
                     editLiquidAsset(
                         wrapper.dataset.assetId
                     );
+
                 }
+
             }
+
         }
     );
 }
