@@ -4623,9 +4623,38 @@ function bindEvents(
     container
 ) {
 
+    if (!container) {
+        return;
+    }
+
+    /*
+     * IMPORTANT:
+     *
+     * renderFinance() вызывается после изменения данных.
+     * Поэтому нельзя каждый раз добавлять новый
+     * click listener на тот же finance-container.
+     *
+     * Храним флаг непосредственно на DOM-контейнере.
+     */
+
+    if (
+        container.dataset
+            .financeEventsBound === "true"
+    ) {
+        return;
+    }
+
+    container.dataset
+        .financeEventsBound = "true";
+
+
     container.addEventListener(
         "click",
         event => {
+
+            /* =========================================
+               MAIN ACTIONS
+               ========================================= */
 
             const action =
                 event.target.closest(
@@ -4639,6 +4668,10 @@ function bindEvents(
                     action.dataset.action;
 
 
+                /* =====================================
+                   ACCORDION
+                   ===================================== */
+
                 if (
                     type ===
                     "toggle-accordion"
@@ -4649,9 +4682,12 @@ function bindEvents(
                     );
 
                     return;
-
                 }
 
+
+                /* =====================================
+                   INCOME
+                   ===================================== */
 
                 if (
                     type ===
@@ -4661,9 +4697,12 @@ function bindEvents(
                     editIncome();
 
                     return;
-
                 }
 
+
+                /* =====================================
+                   GOAL
+                   ===================================== */
 
                 if (
                     type ===
@@ -4673,9 +4712,12 @@ function bindEvents(
                     editGoal();
 
                     return;
-
                 }
 
+
+                /* =====================================
+                   RESERVE
+                   ===================================== */
 
                 if (
                     type ===
@@ -4685,9 +4727,12 @@ function bindEvents(
                     editReserve();
 
                     return;
-
                 }
 
+
+                /* =====================================
+                   EXPENSE
+                   ===================================== */
 
                 if (
                     type ===
@@ -4697,9 +4742,12 @@ function bindEvents(
                     openExpenseModal();
 
                     return;
-
                 }
 
+
+                /* =====================================
+                   LIQUID ASSET — ADD
+                   ===================================== */
 
                 if (
                     type ===
@@ -4709,9 +4757,12 @@ function bindEvents(
                     openAssetModal();
 
                     return;
-
                 }
 
+
+                /* =====================================
+                   LIQUID ASSET — EDIT
+                   ===================================== */
 
                 if (
                     type ===
@@ -4721,10 +4772,12 @@ function bindEvents(
                     const id =
                         action.dataset.id;
 
+
                     const {
                         liquidFunds
                     } =
                         getFinanceData();
+
 
                     const asset =
                         liquidFunds.assets
@@ -4733,6 +4786,7 @@ function bindEvents(
                                     item.id ===
                                     id
                             );
+
 
                     if (asset) {
 
@@ -4743,9 +4797,12 @@ function bindEvents(
                     }
 
                     return;
-
                 }
 
+
+                /* =====================================
+                   LIQUID FUNDS — PERIOD
+                   ===================================== */
 
                 if (
                     type ===
@@ -4757,11 +4814,14 @@ function bindEvents(
                     );
 
                     return;
-
                 }
 
             }
 
+
+            /* =========================================
+               DELETE EXPENSE
+               ========================================= */
 
             const deleteExpenseButton =
                 event.target.closest(
@@ -4778,9 +4838,12 @@ function bindEvents(
                 );
 
                 return;
-
             }
 
+
+            /* =========================================
+               DELETE LIQUID ASSET
+               ========================================= */
 
             const deleteAssetButton =
                 event.target.closest(
@@ -4797,9 +4860,12 @@ function bindEvents(
                 );
 
                 return;
-
             }
 
+
+            /* =========================================
+               LIQUID ASSET ROW
+               ========================================= */
 
             const assetRow =
                 event.target.closest(
@@ -4821,6 +4887,19 @@ function bindEvents(
                     return;
                 }
 
+
+                /*
+                 * Системные активы:
+                 *
+                 * Наличные
+                 * Деньги на картах
+                 * Банковские счета
+                 *
+                 * Нельзя удалить или
+                 * переименовать.
+                 *
+                 * Можно изменить только сумму.
+                 */
 
                 if (
                     wrapper.dataset.system ===
@@ -4845,10 +4924,7 @@ function bindEvents(
 
         }
     );
-
 }
-
-
 /* =========================================================
    ACCORDION
    ========================================================= */
